@@ -1,9 +1,10 @@
 from graph_tool.all import *
 from global_utilities import *
 from analyse_includes import *
+from analyse_functions import *
 import random
 
-configFileName = 'jackal_project_config.cnf'
+configFileName = 'byggern_project_config.cnf'
 includepattern = getIncludePattern(configFileName)
 topDirectory = getTopDirectory(configFileName)
 excludedDirectories = getExludedDirs(configFileName)
@@ -15,6 +16,28 @@ inclusionDict = inclusiondata[1]
 filesFound = inclusiondata[2]
 filesMentioned = inclusiondata[3]
 allFiles = filesFound + filesMentioned
+
+#Get function definitions for entire project
+functionDefinitions = []
+tokenDirectory = getTokenDir(configFileName)
+for file in filesFound:
+    tokens = []    
+    tokenfile = tokenDirectory + os.path.basename(file) + '.txt'    
+    for token in tokenize(getFileAsString(file)):     
+        if tokenDirectory != '0':   
+            appendStringToFile(tokenfile, str(token)+'\n')
+        tokens.append(token)
+    candidates = findCandidateFuncs(tokens)
+    sortedCandidates = sortCandidateFuncs(candidates, tokens)
+    defCandidates = sortedCandidates[1]
+    defintions = parseDefinitions(defCandidates, tokens)
+    functionDefinitions.append((file, defintions))
+
+funclog = str(getKeywordFromConfigFile(configFileName, 'functionlog'))
+for item in functionDefinitions:    
+    appendStringToFile(funclog, str(item[0])+'\n')
+    for name in item[1]:
+        appendStringToFile(funclog, str(name)+'\n')
 
 #Remove file paths to avoid cluttered output
 shortenedFileNames =[]
@@ -164,7 +187,7 @@ distanceMatrix = inclusiondata[4]
 
 for i in range(0, len(distanceMatrix)):
     for j in range(0, len(distanceMatrix[i])):     
-            if(distanceMatrix[i][j] == 0):
+            #if(distanceMatrix[i][j] == 0):
                 dirDistanceG.add_edge(i, j)
 
 vtext=dirDistanceG.new_vertex_property("string")
@@ -172,16 +195,24 @@ for i in range(0, len(allFiles)):
     vtext[i] = shortenedFileNames[i]
 
 
-# edgeweights = dirDistanceG.new_edge_property("int")
-# for i in range(0, len(distanceMatrix)):
-#     for j in range(0, len(distanceMatrix[i])):
-#         lincoord = i*len(distanceMatrix) + j
-#         edgeweights.a[lincoord]=(distanceMatrix[i][j])*(0.20)
+edgeweights = dirDistanceG.new_edge_property("int")
+for i in range(0, len(distanceMatrix)):
+    for j in range(0, len(distanceMatrix[i])):
+        lincoord = i*len(distanceMatrix) + j
+        edgeweights.a[lincoord]=((distanceMatrix[i][j])*(0.05)+0.01)*(-1)
+
+
+vcolor = dirDistanceG.new_vertex_property("vector<float>")
+for i in range(0, len(allFiles)):
+    for j in range(0, len(colors)):
+        if(vdir[i] == uniqueParentDirs[j]):
+            vcolor[i]=colors[j]
+
 
 vpos = arf_layout(dirDistanceG, 
-                    #weight=edgeweights,
-                    #d=0.5,
-                    #a=10,
+                    weight=edgeweights,
+                    d=0.5,
+                    a=10,
                     max_iter=500)
 
 #Filter out all 144² edges in order to not fuck with the drawer
@@ -196,7 +227,7 @@ graph_draw(dirDistanceG,
             vertex_text_position=5,
             vertex_size=6,
             output_size=(1200,1200),
-            #vertex_fill_color=vcolor,
+            vertex_fill_color=vcolor,
             ink_scale=1,
             #fit_view=False,
             #fit_view_ink=False,
@@ -249,18 +280,45 @@ for i in range(0, len(inclusionMatrix)):
         if(inclusionMatrix[i][j] == 1):
             groupedsfdp.add_edge(j, i)
 
+vcolor = groupedsfdp.new_vertex_property("vector<float>")
+for i in range(0, len(allFiles)):
+    for j in range(0, len(colors)):
+        if(vdir[i] == uniqueParentDirs[j]):
+            vcolor[i]=colors[j]
+
+
+
+
 vpos = sfdp_layout(groupedsfdp,
-                    gamma=1, #default 0.3
-                    r=1, #default 1
+                    gamma=50, #default 0.3, repulsion between groups
+                    r=0.3, #default 1, attraction between "connected components"
                     groups=vparents)
 graph_draw(groupedsfdp,
             pos=vpos,
             vertex_text=vtext,
             vertex_text_position=5,
-            vertex_size=6,
+            vertex_size=10,
             output_size=(1200,1200),
-            #vertex_fill_color=vcolor,
+            vertex_fill_color=vcolor,
             ink_scale=1,
             #fit_view=False,
             #fit_view_ink=False,
-            output="sfdp/grouped_test.pdf")
+            output="sfdp/grouped_simple.pdf")
+
+#Test the effect of gamma and r
+gammas = [0.3, 1, 3, 10, 30]
+rs = [1, 5, 10, 20, 50]
+for gamma in gammas:
+    for r in rs:
+        vpos = sfdp_layout(groupedsfdp,
+                            gamma=gamma,
+                            r=r,
+                            groups=vparents)
+
+        op_string = "sfdp/grouped_g" + str(gamma) + "_r" + str(r) + ".pdf"
+        graph_draw(groupedsfdp,
+                    pos=vpos,
+                    vertex_size=6,
+                    vertex_fill_color=vcolor,
+                    ink_scale=1,
+                    output=op_string)

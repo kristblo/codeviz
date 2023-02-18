@@ -32,7 +32,7 @@ def findIncludeStatements(filestring, includepattern):
 #choosing from all available files under the topdir
 def findFullIncludePaths(currenFilePath, fileList, includePattern, config):
     inclog = str(getKeywordFromConfigFile(config, 'includelog'))
-    filestring = getfFileAsString(currenFilePath)
+    filestring = getFileAsString(currenFilePath)
     incStatements = findIncludeStatements(filestring, includePattern)
     fullIncludePaths = []
     danglingIncludes = []

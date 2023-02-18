@@ -1,0 +1,7 @@
+#function declaration: keyword(s) identifier(arglist);
+
+
+#function definition: keyword(s) identifier(arlist){body}
+
+
+#function call: identifier(args)

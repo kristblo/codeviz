@@ -1,0 +1,17 @@
+char
+const
+double
+else
+enum
+extern
+float
+inline
+int
+long
+short
+signed
+static
+struct
+unsigned
+void
+volatile

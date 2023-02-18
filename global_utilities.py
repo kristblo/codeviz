@@ -2,7 +2,7 @@ import re
 import os
 
 #Opens an existing file and returns it as a string
-def getfFileAsString(filename):
+def getFileAsString(filename):
     try:
         file = open(filename, 'r')
         out = file.read()
@@ -24,7 +24,7 @@ def appendStringToFile(filename, string):
 
 #Gets an arbitrary line from the config file
 def getKeywordFromConfigFile(configfile, keyword):
-    file = getfFileAsString(configfile)
+    file = getFileAsString(configfile)
     fileAsArray = re.split('\n', file)
 
     for line in fileAsArray:
@@ -51,6 +51,11 @@ def getExludedDirs(configfile):
 
     return excldirs
 
+#Scans the config file for the project's desired tokenizer output directory
+def getTokenDir(configfile):
+    tokendirstring = getKeywordFromConfigFile(configfile, 'tokenDirectory')
+    return tokendirstring
+
 #Checks a file ending against permitted source file types
 def isSourceFile(filename, configfile):
     pattern = re.compile(getKeywordFromConfigFile(configfile, 'sourcepattern'))    
@@ -69,7 +74,7 @@ def findAllSourceFilePaths(topDir, excludedDirs, configfile):
                 sourcefiles.append(dir+item.name)
     return sourcefiles
 
-#Determins whether a path contains an excluded directory
+#Determines whether a path contains an excluded directory
 def hasExcludedPath(path, excludedDirs):
     forbidden = False 
     for dir in excludedDirs:
