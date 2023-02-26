@@ -1,4 +1,2 @@
-*.pdf
-*.cnf
 __pycache__
-logfiles/*
+
