@@ -43,7 +43,7 @@ for item in functionCalls:
 
 
 #Construct dataNodes
-list1 = createNodesFromFcCalls(functionCalls, excludedFcNames)
+#list1 = createNodesFromFcCalls(functionCalls, excludedFcNames)
 
 
 #Remove file paths to avoid cluttered output

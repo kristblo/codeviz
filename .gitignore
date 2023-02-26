@@ -1,2 +1,5 @@
+logfiles/*
 __pycache__
 
+
+*.pdf

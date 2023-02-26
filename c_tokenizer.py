@@ -13,6 +13,7 @@ class Token(NamedTuple):
 
 
 def tokenizeCode(code):
+    tokens = []
     keywords = {'IF', 'ELSE', 'ELSE IF', 'FOR', 'RETRUN'}
     token_specification = [
         ('LCOMS',   r'(\/\*)'),         #Start of long comment /*
@@ -132,7 +133,9 @@ def tokenizeCode(code):
         elif kind == 'MISMATCH':
             #raise RuntimeError(f'{value!r} unexpected on line {line_num}')
             continue
-        yield Token(kind, value, line_num, column)
+        #yield Token(kind, value, line_num, column)
+        tokens.append(Token(kind, value, line_num, column))
+    return tokens
 
 statements = '''
     IF quantity THEN

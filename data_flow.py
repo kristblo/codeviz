@@ -37,8 +37,8 @@ def createNodesFromFcCalls(fcCallList, excludedFcNames):
         for ArgList in fcObject.args:
             for argStr in ArgList:
                 argToken = tokenizeCode(argStr)
-                if argToken.type == 'ID' and argToken.value not in language_keywords:
-                    inputs.append(argToken.value)        
+                if argToken[0].type == 'ID' and argToken[0].value not in language_keywords:
+                    inputs.append(str(argToken[0].value))        
 
         print(fcObject.name, inputs, outputs, 'idstr')
 
