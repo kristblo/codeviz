@@ -83,8 +83,7 @@ def findFullIncludePaths(currenFilePath, fileList, includePattern, config):
     return fullIncludePaths, danglingIncludes        
 
 #Calculate inclusion matrix for entire project
-def getProjectInclusionData(topDir, exclDirs, configFileName):
-    #TODO: Implement
+def getProjectInclusionData(topDir, exclDirs, configFileName):    
     #Matrix is size (all known files)*(all known files + dangling incs)
     includepattern = getIncludePattern(configFileName)
     allKnownFiles = findAllSourceFilePaths(topDir, exclDirs, configFileName)
@@ -92,8 +91,7 @@ def getProjectInclusionData(topDir, exclDirs, configFileName):
     danglingIncludesPerFile = {}
     
 
-    #Find full include paths to all files in project
-    #TODO: Improve to only look up files once
+    #Find full include paths to all files in project    
     for file in allKnownFiles:
         all = findFullIncludePaths(file, allKnownFiles, includepattern, configFileName)
         full = all[0]

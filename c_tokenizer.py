@@ -1,6 +1,8 @@
 from typing import NamedTuple
 import re
+import os
 from global_utilities import getFileAsString
+from global_utilities import getKeywordFromConfigFile
 from global_utilities import appendStringToFile
 
 class Token(NamedTuple):
@@ -10,14 +12,14 @@ class Token(NamedTuple):
     column: int
 
 
-def tokenize(code):
+def tokenizeCode(code):
     keywords = {'IF', 'ELSE', 'ELSE IF', 'FOR', 'RETRUN'}
     token_specification = [
         ('LCOMS',   r'(\/\*)'),         #Start of long comment /*
         ('LCOME',   r'(\*\/)'),         #End of long comment */
         ('COMMENT', r'(//)+.*'),        #Ignore singe line comments
-        ('PREFIX',  r'(0x)|(0b)'),      #Number prefixes
         ('ID',      r'[A-Za-z_]+[A-Za-z_\d]*'),  #Identifiers
+        ('PREFIX',  r'(0x)|(0b)'),      #Number prefixes
         ('NUMBER',  r'\d+(\.\d*)?'),    #Integer or decimal number        
         ('ASSIGN',  r'(&=)|(\|=)|(\^=)|='), #Assignment operator
         ('VARARG',  r'(\.\.\.)'),       #Variable argument list
@@ -144,3 +146,24 @@ file = getFileAsString('/home/kristian/byggern-nicer_code/adc_driver.c')
 # for token in tokenize(file):
 #     #print(token)
 #     appendStringToFile('tokenizeroutput.txt', str(token) + '\n')
+
+def getTokenDir(configfile):
+    tokendirstring = getKeywordFromConfigFile(configfile, 'tokenDirectory')
+    return tokendirstring
+
+def tokenizeProject(configfile, projectfiles):
+    tokensPerFile = {}
+    tokenTextFileDirectory = getTokenDir(configfile)
+
+    for file in projectfiles:
+        tokens = []        
+        tokenTextFileName = tokenTextFileDirectory + os.path.basename(file) + '.txt'
+
+        for token in tokenizeCode(getFileAsString(file)):
+            if tokenTextFileDirectory != '0':
+                appendStringToFile(tokenTextFileName, str(token)+'\n')
+            tokens.append(token)
+        tokensPerFile[file] = tokens
+
+    return tokensPerFile
+
