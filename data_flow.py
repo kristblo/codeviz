@@ -24,7 +24,7 @@ class DataNode(NamedTuple):
     uniquename: str #some unique identifier to prevent confusion
 
 #TODO: Make part of config
-excludedFcNames = ['printf', '_delay_ms']
+excludedFcNames = ['printf','printi','prints','printchar', '_delay_ms']
 def createNodesFromFcCalls(fcCallList, excludedFcNames):
     dataNodes = []
 
@@ -52,16 +52,44 @@ def createNodesFromFcCalls(fcCallList, excludedFcNames):
 
     return dataNodes
 
-#TODO: Make part of config
-excludedConstNames = ['i']
+#TODO: Make part of config, include reserved names
+excludedConstNames = ['i'] 
 def createNodesFromConstants(constantList, excludedConstNames):
     dataNodes = []
 
     for const in constantList:
-        if const.name in excludedConstNames or const.value == 'DECL':
+        if const.name in excludedConstNames:
             continue
-        dataNodes.append(DataNode(const.name, ))
+        name = const.name
+        scope = const.scope
+        input = [const.value]
+        output = ['CONST']
+
+        dataNodes.append(DataNode(name, input, output, scope))
 
     return dataNodes
 
+def getDataFlowData(constList,
+                      exclConstNames,
+                      fcCallList,
+                      exclFcNames):
+    constNodes = createNodesFromConstants(constList, exclConstNames)
+    funcNodes = createNodesFromFcCalls(fcCallList, exclFcNames)
+    allNodes = constNodes + funcNodes
+    flowMx = []#Nodes²
+    
+    #Index is 1 indicates input
+    # => If an input of a Node can be found as a name of another, set 1
+    #TODO: Dangling inputs
+    for node in allNodes:
+        row = [0]*len(allNodes)
+        currentNodeInputs = node.inputs
+        for input in currentNodeInputs:
+            for index, checkNode in enumerate(allNodes):
+                currentName = checkNode.name
+                if currentName == input:
+                    row[index] = 1
+        flowMx.append(row)
+
+    return flowMx, allNodes
 

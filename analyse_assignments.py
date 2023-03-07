@@ -27,7 +27,8 @@ def assignmentLeftSide():
     "common":   ['ID', 'ID', 'ASSIGN'],
     "common_p": ['ID', 'ARITOP', 'ID', 'ASSIGN'],
     "member":   ['ID', 'MEMBER', 'ID', 'ASSIGN'],
-    "decl"  :   ['ID', 'ID', 'END']
+    "decl"  :   ['ID', 'ID', 'END'],
+    "pure"  :   ['ID', 'ASSIGN'] #TODO:Will need treatment to only include non-reserved syms
   }
   return lsPts
 
@@ -73,6 +74,8 @@ def findAssignments(tokenList, currentFileName):
           #No, but they might be used for it later
           leftSide = [tokenListSlice[0].value, tokenListSlice[1].value]
           rightSide = ['DECL', str(tokenListSlice[0].line)]
+        if patternname == 'pure':
+          leftSide = ['ASSIGNMENT', tokenListSlice[0].value]
         break        
     
     #Continue onto right side after left side is found

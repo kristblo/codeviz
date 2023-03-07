@@ -1,4 +1,4 @@
-#from graph_tool.all import *
+from graph_tool.all import *
 from global_utilities import *
 from analyse_includes import *
 from analyse_functions import *
@@ -70,11 +70,15 @@ for item in projectConstants:
 
 
 #Construct dataNodes
-list1 = createNodesFromFcCalls(functionCalls, excludedFcNames)
-for item in list1:
-    print(item)
+constantNodes = createNodesFromConstants(projectConstants, excludedConstNames)
+funcCallNodes = createNodesFromFcCalls(functionCalls, excludedFcNames)
 
-exit("Function and constant analysis complete") #kill program early
+#Create flow matrix
+flowData = getDataFlowData(projectConstants, excludedConstNames,
+                               functionCalls, excludedFcNames)
+flowMatrix = flowData[0]
+globalNodes = flowData[1]
+    
 
 
 #Remove file paths to avoid cluttered output
@@ -107,33 +111,33 @@ for item in uniqueParentDirs:
     
 
 
-#Build include graph
-maingraph = Graph(directed=True)
-for file in (allFiles):
-    maingraph.add_vertex()
+# #Build include graph
+# maingraph = Graph(directed=True)
+# for file in (allFiles):
+#     maingraph.add_vertex()
 
-#Link node text with vertices
-vtext = maingraph.new_vertex_property("string")
-for i in range(0, len(allFiles)):
-    vtext[i] = shortenedFileNames[i]
+# #Link node text with vertices
+# vtext = maingraph.new_vertex_property("string")
+# for i in range(0, len(allFiles)):
+#     vtext[i] = shortenedFileNames[i]
 
-#Associate vertices with a parent directory
-vdir = maingraph.new_vertex_property("string")
-for i in range(0, len(allFiles)):
-    vdir[i] = parentDirPerFile[i]
+# #Associate vertices with a parent directory
+# vdir = maingraph.new_vertex_property("string")
+# for i in range(0, len(allFiles)):
+#     vdir[i] = parentDirPerFile[i]
 
-vcolor = maingraph.new_vertex_property("vector<float>")
-for i in range(0, len(allFiles)):
-    for j in range(0, len(colors)):
-        if(vdir[i] == uniqueParentDirs[j]):
-            vcolor[i]=colors[j]
+# vcolor = maingraph.new_vertex_property("vector<float>")
+# for i in range(0, len(allFiles)):
+#     for j in range(0, len(colors)):
+#         if(vdir[i] == uniqueParentDirs[j]):
+#             vcolor[i]=colors[j]
 
 
 #Generate edges between includes
-for i in range(0, len(inclusionMatrix)):    
-    for j in range(0, len(allFiles)):
-        if(inclusionMatrix[i][j] == 1):
-            maingraph.add_edge(j, i)
+# for i in range(0, len(inclusionMatrix)):    
+#     for j in range(0, len(allFiles)):
+#         if(inclusionMatrix[i][j] == 1):
+#             maingraph.add_edge(j, i)
 
 
 #ARF layout
@@ -169,14 +173,14 @@ for i in range(0, len(inclusionMatrix)):
 
 
 #Filter out libfiles from the graph drawing
-libvcs = maingraph.new_vertex_property("bool")
-for i in range(0, maingraph.num_vertices()):
-    if(vdir[i] == "libfiles"):
-        libvcs[i] = False
-    else:
-        libvcs[i] = True
-libsfiltered = GraphView(maingraph)
-libsfiltered.set_vertex_filter(libvcs)
+# libvcs = maingraph.new_vertex_property("bool")
+# for i in range(0, maingraph.num_vertices()):
+#     if(vdir[i] == "libfiles"):
+#         libvcs[i] = False
+#     else:
+#         libvcs[i] = True
+# libsfiltered = GraphView(maingraph)
+# libsfiltered.set_vertex_filter(libvcs)
 # vpos = arf_layout(libsfiltered, max_iter=0)
 # graph_draw(libsfiltered,
 #             pos=vpos,
@@ -365,30 +369,56 @@ libsfiltered.set_vertex_filter(libvcs)
 #############################################################################
 #################################FUNCTIONS###################################
 #############################################################################
-functionGraph = Graph(directed=True)
-for function in functionGlobalDefs:
-    functionGraph.add_vertex()
-for callee in undefinedCallees:
-    functionGraph.add_vertex()
+# functionGraph = Graph(directed=True)
+# for function in functionGlobalDefs:
+#     functionGraph.add_vertex()
+# for callee in undefinedCallees:
+#     functionGraph.add_vertex()
 
-vtext = functionGraph.new_vertex_property("string")
-for i in range(0, len(functionGlobalDefs)):    
-    vtext[i] = functionGlobalDefs[i].name
-for i in range(0, len(undefinedCallees)):
-    vtext[len(functionGlobalDefs)+i] = undefinedCallees[i]
+# vtext = functionGraph.new_vertex_property("string")
+# for i in range(0, len(functionGlobalDefs)):    
+#     vtext[i] = functionGlobalDefs[i].name
+# for i in range(0, len(undefinedCallees)):
+#     vtext[len(functionGlobalDefs)+i] = undefinedCallees[i]
 
-for i in range(0, len(functionMatrix)):
-    for j in range(0, len(functionMatrix[i])):
-        if functionMatrix[i][j] == 1:
-            functionGraph.add_edge(j, i)
+# for i in range(0, len(functionMatrix)):
+#     for j in range(0, len(functionMatrix[i])):
+#         if functionMatrix[i][j] == 1:
+#             functionGraph.add_edge(j, i)
 
 
-vpos = arf_layout(functionGraph, max_iter=0)
-graph_draw(functionGraph,
-            pos=vpos,
-            vertex_text=vtext,
-            vertex_text_position=5,
-            vertex_size=6,
-            #vertex_fill_color=vcolor,
-            #ink_scale=0.2,
-            output="arf/functions.pdf")
+# vpos = arf_layout(functionGraph, max_iter=0)
+# graph_draw(functionGraph,
+#             pos=vpos,
+#             vertex_text=vtext,
+#             vertex_text_position=5,
+#             vertex_size=6,
+#             #vertex_fill_color=vcolor,
+#             #ink_scale=0.2,
+#             output="arf/functions.pdf")
+
+#############################################################################
+##################################DATAFLOW###################################
+#############################################################################
+flowGraph = Graph(directed=True)
+for node in globalNodes:
+    flowGraph.add_vertex()
+
+vtext = flowGraph.new_vertex_property("string")
+for index, node in enumerate(globalNodes):
+    vtext[index] = node.name
+
+for i in range(0, len(flowMatrix)):
+    for j in range(0, len(flowMatrix[i])):
+        if flowMatrix[i][j] == 1:
+            flowGraph.add_edge(j, i)
+
+vpos = arf_layout(flowGraph, max_iter=1000)
+graph_draw(flowGraph,
+           pos=vpos,
+           vertex_size=10,
+           output_size=(2400, 2400),
+           vertex_text=vtext,
+           vertex_text_position=5,
+           output="arf/dataflow.pdf")
+
