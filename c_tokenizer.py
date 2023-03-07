@@ -12,7 +12,7 @@ class Token(NamedTuple):
     column: int
 
 
-def tokenizeCode(code):
+def tokenizeString(code):
     tokens = []
     keywords = {'IF', 'ELSE', 'ELSE IF', 'FOR', 'RETRUN'}
     token_specification = [
@@ -20,15 +20,15 @@ def tokenizeCode(code):
         ('LCOME',   r'(\*\/)'),         #End of long comment */
         ('COMMENT', r'(//)+.*'),        #Ignore singe line comments
         ('ID',      r'[A-Za-z_]+[A-Za-z_\d]*'),  #Identifiers
-        ('PREFIX',  r'(0x)|(0b)'),      #Number prefixes
+        ('PREFIX',  r'(0x)|(0b)|(0X)|(0B)'),      #Number prefixes
         ('NUMBER',  r'\d+(\.\d*)?'),    #Integer or decimal number        
-        ('ASSIGN',  r'(&=)|(\|=)|(\^=)|='), #Assignment operator
+        ('ASSIGN',  r'(&=)|(\|=)|(\^=)|(%=)|='), #Assignment operators
         ('VARARG',  r'(\.\.\.)'),       #Variable argument list
         ('END',     r';'),              #Statement terminator
         ('MEMBER',  r'(\.)|(->)'),      #Member variable access
         ('LOGOP',   r'(&&)|(\|\|)|(==)|(>=)|(<=)'),          #Logic operators
         ('BITWOP',  r'(<<)|(>>)|[&\|\^~]'), #Bitwise operators
-        ('ARITOP',  r'[+\-*/<>:]'),        #Arithmetic operators        
+        ('ARITOP',  r'[+\-*/<>:%]'),        #Arithmetic operators        
         ('STRING',   r'(\")'),          #Start and end string
         ('CHAR',    r'\''),             #Start and end char
         ('NEWLINE', r'\n'),             #Line endings
@@ -162,7 +162,7 @@ def tokenizeProject(configfile, projectfiles):
         tokens = []        
         tokenTextFileName = tokenTextFileDirectory + os.path.basename(file) + '.txt'
 
-        for token in tokenizeCode(getFileAsString(file)):
+        for token in tokenizeString(getFileAsString(file)):
             if tokenTextFileDirectory != '0':
                 appendStringToFile(tokenTextFileName, str(token)+'\n')
             tokens.append(token)

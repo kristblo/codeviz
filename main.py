@@ -1,7 +1,8 @@
-from graph_tool.all import *
+#from graph_tool.all import *
 from global_utilities import *
 from analyse_includes import *
 from analyse_functions import *
+from analyse_assignments import *
 from data_flow import *
 import random
 
@@ -9,6 +10,9 @@ configFileName = 'byggern_project_config.cnf'
 includepattern = getIncludePattern(configFileName)
 topDirectory = getTopDirectory(configFileName)
 excludedDirectories = getExludedDirs(configFileName)
+
+#Reset logfiles directory
+delete_files_recv('./logfiles')
 
 #Get inclusion data
 inclusiondata = getProjectInclusionData(topDirectory, excludedDirectories, configFileName)
@@ -41,9 +45,36 @@ funccalllog = str(getKeywordFromConfigFile(configFileName, 'functioncallog'))
 for item in functionCalls:
     appendStringToFile(funccalllog, str(item)+'\n')
 
+#Find (constant) assignments
+projectConstants = getProjectConstants(tokensPerFile)
+constLog = str(getKeywordFromConfigFile(configFileName, 'constantLog'))
+for item in projectConstants:    
+    appendStringToFile(constLog, str(item)+'\n')
+
+
+    
+#GPT code test
+# from ply_tokenizer import ply_tokenize
+# from ply_tokenizer import get_variablesv2
+# from ply_tokenizer import get_function_declarations
+# from ply_tokenizer import get_function_calls
+# from ply_tokenizer import get_variables
+# from ply_tokenizer import parse_file
+# ply_tokens = ply_tokenize('/home/kristian/byggern-nicer_code/misc.h')
+# vars=get_variablesv2(ply_tokens)
+# decs=get_function_declarations(ply_tokens)
+# calls=get_function_calls(ply_tokens)
+#p = parse_file('/home/kristian/byggern-nicer_code/misc.h')
+
+#print("VARS: \n%s \nDECS: \n %s\nCALLS\n%s" % (vars, decs, calls))
+
 
 #Construct dataNodes
-#list1 = createNodesFromFcCalls(functionCalls, excludedFcNames)
+list1 = createNodesFromFcCalls(functionCalls, excludedFcNames)
+for item in list1:
+    print(item)
+
+exit("Function and constant analysis complete") #kill program early
 
 
 #Remove file paths to avoid cluttered output

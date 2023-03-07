@@ -1,0 +1,236 @@
+Created by PLY version 3.11 (http://www.dabeaz.com/ply)
+
+Unused terminals:
+
+    AND
+    ASSIGN
+    AUTO
+    BITAND
+    BITOR
+    BREAK
+    CASE
+    COMMENT
+    CONST
+    CONTINUE
+    DEFAULT
+    DO
+    ELSE
+    ENDIF
+    ENUM
+    EQ
+    EXTERN
+    FOR
+    GE
+    GOTO
+    GT
+    IF
+    INCLUDE
+    INLINE
+    LBRACE
+    LBRACK
+    LCOMMENT
+    LE
+    LONG
+    LT
+    MEMBER
+    NEGATE
+    NEQ
+    OR
+    PERCENT
+    RBRACE
+    RBRACK
+    REGISTER
+    RESTRICT
+    RETURN
+    SHORT
+    SIGNED
+    SIZEOF
+    STATIC
+    STRING
+    STRUCT
+    SWITCH
+    TYPEDEF
+    UNION
+    UNSIGNED
+    VOLATILE
+    WHILE
+    _ALIGNAS
+    _ALIGNOF
+    _ATOMIC
+    _BOOL
+    _COMPLEX
+    _GENERIC
+    _IMAGERY
+    _NORETURN
+    _STATIC_ASSERT
+    _THREAD_LOCAL
+
+Grammar
+
+Rule 0     S' -> declaration
+Rule 1     declaration -> preprocessor
+Rule 2     preprocessor -> IFNDEF
+Rule 3     preprocessor -> DEFINE
+Rule 4     type_specifier -> INT
+Rule 5     type_specifier -> FLOAT
+Rule 6     type_specifier -> CHAR
+Rule 7     type_specifier -> VOID
+Rule 8     type_specifier -> DOUBLE
+Rule 9     type_specifier -> UINT8_T
+Rule 10    type_specifier -> UINT16_T
+Rule 11    type_specifier -> type_specifier ASTERISK
+Rule 12    type_specifier -> LPAREN type_specifier RPAREN
+Rule 13    function_declaration -> type_specifier ID LPAREN parameter_list RPAREN SEMI
+Rule 14    function_declaration -> type_specifier ASTERISK ID LPAREN parameter_list RPAREN SEMI
+Rule 15    function_declaration -> type_specifier ID LPAREN RPAREN
+Rule 16    function_declaration -> type_specifier ASTERISK ID LPAREN RPAREN
+Rule 17    parameter_list -> parameter_declaration
+Rule 18    parameter_list -> parameter_declaration COMMA parameter_list
+Rule 19    parameter_declaration -> type_specifier ID
+Rule 20    parameter_declaration -> type_specifier ASTERISK ID
+Rule 21    parameter_declaration -> VOID
+Rule 22    expr -> INT
+Rule 23    expr -> FLOAT
+Rule 24    expr -> CHAR
+Rule 25    expr -> ID
+Rule 26    expr -> expr PLUS expr
+Rule 27    expr -> expr MINUS expr
+Rule 28    expr -> expr ASTERISK expr
+Rule 29    expr -> expr DIVIDE expr
+Rule 30    expr -> LPAREN expr RPAREN
+
+Terminals, with rules where they appear
+
+AND                  : 
+ASSIGN               : 
+ASTERISK             : 11 14 16 20 28
+AUTO                 : 
+BITAND               : 
+BITOR                : 
+BREAK                : 
+CASE                 : 
+CHAR                 : 6 24
+COMMA                : 18
+COMMENT              : 
+CONST                : 
+CONTINUE             : 
+DEFAULT              : 
+DEFINE               : 3
+DIVIDE               : 29
+DO                   : 
+DOUBLE               : 8
+ELSE                 : 
+ENDIF                : 
+ENUM                 : 
+EQ                   : 
+EXTERN               : 
+FLOAT                : 5 23
+FOR                  : 
+GE                   : 
+GOTO                 : 
+GT                   : 
+ID                   : 13 14 15 16 19 20 25
+IF                   : 
+IFNDEF               : 2
+INCLUDE              : 
+INLINE               : 
+INT                  : 4 22
+LBRACE               : 
+LBRACK               : 
+LCOMMENT             : 
+LE                   : 
+LONG                 : 
+LPAREN               : 12 13 14 15 16 30
+LT                   : 
+MEMBER               : 
+MINUS                : 27
+NEGATE               : 
+NEQ                  : 
+OR                   : 
+PERCENT              : 
+PLUS                 : 26
+RBRACE               : 
+RBRACK               : 
+REGISTER             : 
+RESTRICT             : 
+RETURN               : 
+RPAREN               : 12 13 14 15 16 30
+SEMI                 : 13 14
+SHORT                : 
+SIGNED               : 
+SIZEOF               : 
+STATIC               : 
+STRING               : 
+STRUCT               : 
+SWITCH               : 
+TYPEDEF              : 
+UINT16_T             : 10
+UINT8_T              : 9
+UNION                : 
+UNSIGNED             : 
+VOID                 : 7 21
+VOLATILE             : 
+WHILE                : 
+_ALIGNAS             : 
+_ALIGNOF             : 
+_ATOMIC              : 
+_BOOL                : 
+_COMPLEX             : 
+_GENERIC             : 
+_IMAGERY             : 
+_NORETURN            : 
+_STATIC_ASSERT       : 
+_THREAD_LOCAL        : 
+error                : 
+
+Nonterminals, with rules where they appear
+
+declaration          : 0
+expr                 : 26 26 27 27 28 28 29 29 30
+function_declaration : 
+parameter_declaration : 17 18
+parameter_list       : 13 14 18
+preprocessor         : 1
+type_specifier       : 11 12 13 14 15 16 19 20
+
+Parsing method: LALR
+
+state 0
+
+    (0) S' -> . declaration
+    (1) declaration -> . preprocessor
+    (2) preprocessor -> . IFNDEF
+    (3) preprocessor -> . DEFINE
+
+    IFNDEF          shift and go to state 3
+    DEFINE          shift and go to state 4
+
+    declaration                    shift and go to state 1
+    preprocessor                   shift and go to state 2
+
+state 1
+
+    (0) S' -> declaration .
+
+
+
+state 2
+
+    (1) declaration -> preprocessor .
+
+    $end            reduce using rule 1 (declaration -> preprocessor .)
+
+
+state 3
+
+    (2) preprocessor -> IFNDEF .
+
+    $end            reduce using rule 2 (preprocessor -> IFNDEF .)
+
+
+state 4
+
+    (3) preprocessor -> DEFINE .
+
+    $end            reduce using rule 3 (preprocessor -> DEFINE .)
+

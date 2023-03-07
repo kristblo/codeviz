@@ -1,6 +1,6 @@
 from typing import NamedTuple
 from  global_utilities import *
-from c_tokenizer import tokenizeCode
+from c_tokenizer import tokenizeString
 from analyse_functions import *
 
 
@@ -19,10 +19,11 @@ from analyse_functions import *
 
 class DataNode(NamedTuple):
     name: str #the node's human-readable name as defined in the source code
-    inputs = list
-    output = list
-    uniquename = str #some unique identifier to prevent confusion
+    inputs: list
+    output: list
+    uniquename: str #some unique identifier to prevent confusion
 
+#TODO: Make part of config
 excludedFcNames = ['printf', '_delay_ms']
 def createNodesFromFcCalls(fcCallList, excludedFcNames):
     dataNodes = []
@@ -35,15 +36,31 @@ def createNodesFromFcCalls(fcCallList, excludedFcNames):
         if fcObject.name in excludedFcNames:
             continue
         for ArgList in fcObject.args:
+            currentarg = ''
             for argStr in ArgList:
-                argToken = tokenizeCode(argStr)
-                if argToken[0].type == 'ID' and argToken[0].value not in language_keywords:
-                    inputs.append(str(argToken[0].value))        
+                argToken = tokenizeString(str(argStr))
+                if argToken[0].value not in language_keywords:
+                    currentarg += (str(argToken[0].value))
+            inputs.append(currentarg)
+            currentarg = ''
 
-        print(fcObject.name, inputs, outputs, 'idstr')
+        #print(fcObject.name, inputs, outputs, 'idstr')
+        dataNodes.append(DataNode(fcObject.name, inputs, outputs, 'scope'))
 
             
 
+
+    return dataNodes
+
+#TODO: Make part of config
+excludedConstNames = ['i']
+def createNodesFromConstants(constantList, excludedConstNames):
+    dataNodes = []
+
+    for const in constantList:
+        if const.name in excludedConstNames or const.value == 'DECL':
+            continue
+        dataNodes.append(DataNode(const.name, ))
 
     return dataNodes
 

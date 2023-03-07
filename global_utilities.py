@@ -22,6 +22,12 @@ def appendStringToFile(filename, string):
     # file.close()
         outfile.write(string)
 
+#Delete all files in a directory, recusively
+def delete_files_recv(path):
+    for root, dirs, files in os.walk(path):
+        for file in files:            
+            os.remove(os.path.join(root, file))
+
 #Gets an arbitrary line from the config file
 def getKeywordFromConfigFile(configfile, keyword):
     file = getFileAsString(configfile)

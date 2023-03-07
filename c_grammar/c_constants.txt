@@ -1,0 +1,6 @@
+keyword identifier assignment paropen keyword parclose number end
+keyword identifier assignment paropen keyword parclose identifier end
+keyword identifier assignment prefix number end
+keyword identifier assignment identifier end
+keyword identifier assignment number end
+keyword identifier end
