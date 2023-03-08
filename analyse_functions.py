@@ -37,10 +37,12 @@ class FunctionDef(NamedTuple):
     rettype: str
     signature: list #rettype + argtypev
     callees: list
+    scope: list
 
 class FunctionCall(NamedTuple):
     name: str
     args: list
+    scope: list
 
 
 
@@ -128,7 +130,7 @@ def parseArguments(index, tokenList):
 
 
 #Declarations are not really interesting/can be parsed with this
-def parseDefinitions(candidateDefList, tokenList):
+def parseDefinitions(candidateDefList, tokenList, fileName):
     definitions = []
     for candidate in candidateDefList:
         index = candidate[0]
@@ -160,13 +162,15 @@ def parseDefinitions(candidateDefList, tokenList):
             sigPart = ''
 
         #Find possible callees
-        callees = findCallees(candidate, tokenList)
-        definitions.append(FunctionDef(candidate[1].value, args, rettype, signature, callees))
+        callees = findCallees(candidate, tokenList, fileName)
+        scope = [fileName, tokenList[index].line]
+        definitions.append(FunctionDef(candidate[1].value, args, rettype, signature, callees, scope))
     return definitions
 
 #Look for calls to functions inside a function def body
 #after finding all calls in a project
-def findCallees(candidateDef, tokenList):
+#TODO:Reimplement to not pass fileName. Bad separation
+def findCallees(candidateDef, tokenList, fileName):
     #1. For each def in candidates, use the token index to start looking
     #2. Determine scope of function body by counting braces, store token indeces
     #3. Look for calls within that range
@@ -193,7 +197,7 @@ def findCallees(candidateDef, tokenList):
     candidates = findCandidateFuncs(bodyTokens)
     calleeCands = sortCandidateFuncs(candidates, bodyTokens)[2]
     callees = []
-    callees.append(parseCalls(calleeCands, bodyTokens))
+    callees.append(parseCalls(calleeCands, bodyTokens, fileName))
 
     return callees[0]
 
@@ -201,7 +205,7 @@ def findCallees(candidateDef, tokenList):
 
 
 
-def parseCalls(candidateCallList, tokenList):
+def parseCalls(candidateCallList, tokenList, fileName):
     rettype = 'call'
     calls = []
     for candidate in candidateCallList:
@@ -218,8 +222,9 @@ def parseCalls(candidateCallList, tokenList):
         #     else:
         #         sigPart = 'void'
         #     signature.append(sigPart)
-        #Not much point, the info is better preserve in the arglist
-        calls.append(FunctionCall(candidate[1].value, args))                
+        #Not much point, the info is better preserved in the arglist
+        scope = [fileName, tokenList[index].line]
+        calls.append(FunctionCall(candidate[1].value, args, scope))                
     return calls
 
 
@@ -237,11 +242,11 @@ def getProjectFunctionData(configfile, tokenizedFiles):
         sortedCandidates = sortCandidateFuncs(candidates, tokens)
 
         defCandidates = sortedCandidates[1]
-        definitions = parseDefinitions(defCandidates, tokens)
+        definitions = parseDefinitions(defCandidates, tokens, file)
         functionDefinitionsPerFile.append((file, definitions))
 
         callCandidates = sortedCandidates[2]
-        calls = parseCalls(callCandidates, tokens)
+        calls = parseCalls(callCandidates, tokens, file)
         #functionCalls.append((file, calls))
         for item in calls:
             functionCalls.append((file, item))

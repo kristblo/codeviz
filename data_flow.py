@@ -24,7 +24,7 @@ class DataNode(NamedTuple):
     uniquename: str #some unique identifier to prevent confusion
 
 #TODO: Make part of config
-excludedFcNames = ['printf','printi','prints','printchar', '_delay_ms']
+excludedFcNames = ['printf','printi','prints','printchar', '_delay_ms', 'malloc']
 def createNodesFromFcCalls(fcCallList, excludedFcNames):
     dataNodes = []
 
@@ -45,10 +45,28 @@ def createNodesFromFcCalls(fcCallList, excludedFcNames):
             currentarg = ''
 
         #print(fcObject.name, inputs, outputs, 'idstr')
-        dataNodes.append(DataNode(fcObject.name, inputs, outputs, 'scope'))
+        dataNodes.append(DataNode(fcObject.name, inputs, outputs, fcObject.scope[0]))
 
             
 
+
+    return dataNodes
+
+def createNodesFromFcDefs(fcDefList, excludedFcNames):
+    dataNodes = []
+
+    for fc in fcDefList:
+        fcObject = fc        
+        outputs = [fcObject.rettype]
+        inputs = []
+
+        if fcObject.name in excludedFcNames:
+            continue
+        for callee in fcObject.callees:
+            inputs.append(callee.name)
+        node = DataNode(fcObject.name, inputs, outputs, fc.scope)
+                            
+        dataNodes.append(node)
 
     return dataNodes
 
@@ -72,10 +90,12 @@ def createNodesFromConstants(constantList, excludedConstNames):
 def getDataFlowData(constList,
                       exclConstNames,
                       fcCallList,
+                      fcDefList,
                       exclFcNames):
     constNodes = createNodesFromConstants(constList, exclConstNames)
-    funcNodes = createNodesFromFcCalls(fcCallList, exclFcNames)
-    allNodes = constNodes + funcNodes
+    funcCallNodes = createNodesFromFcCalls(fcCallList, exclFcNames)
+    funcDefNodes = createNodesFromFcDefs(fcDefList, exclFcNames)
+    allNodes = constNodes + funcCallNodes + funcDefNodes
     flowMx = []#Nodes²
     
     #Index is 1 indicates input

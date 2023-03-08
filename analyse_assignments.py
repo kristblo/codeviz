@@ -9,7 +9,7 @@ class Constant(NamedTuple):
   name: str
   dtype: str #keyword?
   value: str #right side of assignment
-  scope: str #idk, filename? Something to determine validity area
+  scope: list #idk, filename? Something to determine validity area
 
 #TODO:implement editability from txt file?
 sequences = [['ID', 'ID', 'ASSIGN', 'PAROPEN', 'ID', 'PARCLOSE', 'NUMBER', 'END'],
@@ -96,7 +96,7 @@ def findAssignments(tokenList, currentFileName):
       assignments.append(Constant(leftSide[1], \
                                   leftSide[0], \
                                   rightSide[0],\
-                                  currentFileName+' '+rightSide[1]))
+                                  [currentFileName, rightSide[1]]))
       leftSide = []
       rightSide = []
 

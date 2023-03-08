@@ -1,4 +1,4 @@
-from graph_tool.all import *
+#from graph_tool.all import *
 from global_utilities import *
 from analyse_includes import *
 from analyse_functions import *
@@ -69,17 +69,45 @@ for item in projectConstants:
 #print("VARS: \n%s \nDECS: \n %s\nCALLS\n%s" % (vars, decs, calls))
 
 
+####DATAFLOW####
+
 #Construct dataNodes
 constantNodes = createNodesFromConstants(projectConstants, excludedConstNames)
 funcCallNodes = createNodesFromFcCalls(functionCalls, excludedFcNames)
 
 #Create flow matrix
-flowData = getDataFlowData(projectConstants, excludedConstNames,
-                               functionCalls, excludedFcNames)
+flowData = getDataFlowData(projectConstants, 
+                            excludedConstNames,
+                            functionCalls, 
+                            functionGlobalDefs,
+                            excludedFcNames)
 flowMatrix = flowData[0]
 globalNodes = flowData[1]
     
 
+####DATAFLOW V2####
+from data_flow_v2 import *
+assignmentNodes = create_AssignmentNodes_from_Consts(projectConstants, excludedConstNames)
+definitionNodes = create_DefNodes_from_FcDefs(functionGlobalDefs, excludedFcNames)
+callNodes = create_CallNodes_from_FunctionCalls_and_DefNodes(definitionNodes,
+                                                             functionCalls,
+                                                             excludedFcNames)
+for item in assignmentNodes:
+    print("Name %s, input %s, scope: %s\n" %(item.name, item.input, item.scope.filepath))
+for item in definitionNodes:
+    print("Name %s, scope: %s" %(item.name, item.scope.filepath))    
+    for callee in item.callees:
+        print(callee.name)
+    print('\n')
+for item in callNodes:
+    print("Name %s, Scope: %s" %(item.name, item.scope.filepath))   
+    try:
+        print('Def: ', item.definition.name)
+    except:
+        pass
+    for arg in item.arguments:
+        print(arg)
+    print('\n')
 
 #Remove file paths to avoid cluttered output
 shortenedFileNames =[]
@@ -400,25 +428,25 @@ for item in uniqueParentDirs:
 #############################################################################
 ##################################DATAFLOW###################################
 #############################################################################
-flowGraph = Graph(directed=True)
-for node in globalNodes:
-    flowGraph.add_vertex()
+# flowGraph = Graph(directed=True)
+# for node in globalNodes:
+#     flowGraph.add_vertex()
 
-vtext = flowGraph.new_vertex_property("string")
-for index, node in enumerate(globalNodes):
-    vtext[index] = node.name
+# vtext = flowGraph.new_vertex_property("string")
+# for index, node in enumerate(globalNodes):
+#     vtext[index] = node.name
 
-for i in range(0, len(flowMatrix)):
-    for j in range(0, len(flowMatrix[i])):
-        if flowMatrix[i][j] == 1:
-            flowGraph.add_edge(j, i)
+# for i in range(0, len(flowMatrix)):
+#     for j in range(0, len(flowMatrix[i])):
+#         if flowMatrix[i][j] == 1:
+#             flowGraph.add_edge(j, i)
 
-vpos = arf_layout(flowGraph, max_iter=1000)
-graph_draw(flowGraph,
-           pos=vpos,
-           vertex_size=10,
-           output_size=(2400, 2400),
-           vertex_text=vtext,
-           vertex_text_position=5,
-           output="arf/dataflow.pdf")
+# vpos = arf_layout(flowGraph, max_iter=1000)
+# graph_draw(flowGraph,
+#            pos=vpos,
+#            vertex_size=10,
+#            output_size=(2400, 2400),
+#            vertex_text=vtext,
+#            vertex_text_position=5,
+#            output="arf/dataflow.pdf")
 
