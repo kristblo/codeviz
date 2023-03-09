@@ -1,4 +1,4 @@
-#from graph_tool.all import *
+from graph_tool.all import *
 from global_utilities import *
 from analyse_includes import *
 from analyse_functions import *
@@ -92,22 +92,20 @@ definitionNodes = create_DefNodes_from_FcDefs(functionGlobalDefs, excludedFcName
 callNodes = create_CallNodes_from_FunctionCalls_and_DefNodes(definitionNodes,
                                                              functionCalls,
                                                              excludedFcNames)
-for item in assignmentNodes:
-    print("Name %s, input %s, scope: %s\n" %(item.name, item.input, item.scope.filepath))
-for item in definitionNodes:
-    print("Name %s, scope: %s" %(item.name, item.scope.filepath))    
-    for callee in item.callees:
-        print(callee.name)
-    print('\n')
-for item in callNodes:
-    print("Name %s, Scope: %s" %(item.name, item.scope.filepath))   
-    try:
-        print('Def: ', item.definition.name)
-    except:
-        pass
-    for arg in item.arguments:
-        print(arg)
-    print('\n')
+dataNodes = []
+for assignmentNode in assignmentNodes:
+    dnode = dataNode_from_assignmentNode(assignmentNode)
+    dataNodes.append(dnode)
+for callNode in callNodes:
+    dnode = dataNode_from_callNode(callNode)
+    dataNodes.append(dnode)
+
+dnodeLogfileName = getKeywordFromConfigFile(configFileName, 'dataNodeLog')
+for node in dataNodes:
+    appendStringToFile(dnodeLogfileName, str(node)+'\n')
+
+
+dataNodeMatrix = getDataNodeMx(dataNodes)
 
 #Remove file paths to avoid cluttered output
 shortenedFileNames =[]
@@ -428,25 +426,59 @@ for item in uniqueParentDirs:
 #############################################################################
 ##################################DATAFLOW###################################
 #############################################################################
-# flowGraph = Graph(directed=True)
-# for node in globalNodes:
-#     flowGraph.add_vertex()
+flowGraph = Graph(directed=True)
+for node in globalNodes:
+    flowGraph.add_vertex()
 
-# vtext = flowGraph.new_vertex_property("string")
-# for index, node in enumerate(globalNodes):
-#     vtext[index] = node.name
+vtext = flowGraph.new_vertex_property("string")
+for index, node in enumerate(globalNodes):
+    vtext[index] = node.name
 
-# for i in range(0, len(flowMatrix)):
-#     for j in range(0, len(flowMatrix[i])):
-#         if flowMatrix[i][j] == 1:
-#             flowGraph.add_edge(j, i)
+for i in range(0, len(flowMatrix)):
+    for j in range(0, len(flowMatrix[i])):
+        if flowMatrix[i][j] == 1:
+            flowGraph.add_edge(j, i)
 
-# vpos = arf_layout(flowGraph, max_iter=1000)
-# graph_draw(flowGraph,
-#            pos=vpos,
-#            vertex_size=10,
-#            output_size=(2400, 2400),
-#            vertex_text=vtext,
-#            vertex_text_position=5,
-#            output="arf/dataflow.pdf")
+vpos = arf_layout(flowGraph, max_iter=1000)
+graph_draw(flowGraph,
+           pos=vpos,
+           vertex_size=10,
+           output_size=(2400, 2400),
+           vertex_text=vtext,
+           vertex_text_position=5,
+           output="arf/dataflow.pdf")
 
+#############################################################################
+##################################DATAFLOW_V2################################
+#############################################################################
+flowGraph = Graph(directed=True)
+for node in dataNodes:
+    flowGraph.add_vertex()
+
+vtext = flowGraph.new_vertex_property("string")
+for index, node in enumerate(dataNodes):
+    vtext[index] = node.name + '\n' + str(node.scope)
+    text = node.name
+    filename = os.path.basename(node.scope.filepath)
+    lineno = str(node.scope.lineno)
+    text += ' '+filename+' '+lineno
+    vtext[index] = text
+
+vcolor = flowGraph.new_vertex_property("string")
+for index, node in enumerate(dataNodes):
+    vcolor[index] = node.color
+
+for i in range(0, len(dataNodeMatrix)):
+    for j in range(0, len(dataNodeMatrix[i])):
+        if dataNodeMatrix[i][j] == 1:
+            flowGraph.add_edge(j, i)
+
+vpos = arf_layout(flowGraph, max_iter=1000)
+graph_draw(flowGraph,
+           pos=vpos,
+           vertex_size=10,
+           vertex_fill_color = vcolor,
+           output_size=(2400, 2400),
+           vertex_text=vtext,
+           vertex_text_position=5,
+           output="arf/dataflowv2.pdf")

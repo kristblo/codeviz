@@ -39,9 +39,9 @@ class CallNode(NamedTuple):
 
 def dataNode_from_assignmentNode(assignmentNode):
     name = assignmentNode.name
-    inputs = assignmentNode.input #TODO: Make unique?
+    inputs = [assignmentNode.input] #TODO: Make unique?
     scope = assignmentNode.scope
-    color = 'yellow' #TODO: Find out if graph-tool takes color words
+    color = 'orange' #TODO: Find out if graph-tool takes color words
     uniqueID = ''.join([field for field in scope])+name
     
     node = DataNode(name, inputs, scope, color, uniqueID)
@@ -52,19 +52,24 @@ def dataNode_from_callNode(callNode):
     name = callNode.name
     
     inputs = [] #Predictably calculable uniqueIDs for args and callees
-    for callee in callNode.definition.callees:
-        calleeID = ''.join([field for field in callee.scope])+callee.name
-        inputs.append(calleeID)
-    
+    try:
+        for callee in callNode.definition.callees:
+            calleeID = ''.join([str(field) for field in callee.scope])+callee.name
+            #inputs.append(calleeID) #TODO: Fix uniqueIDs
+            inputs.append(callee.name)
+
+    except:
+        pass    
     for arg in callNode.arguments:
         #Assuming a function won't take an argument from outside
         # its own file, and that arg.value is unique
         path = callNode.scope.filepath
-        argID = path+arg.value
-        inputs.append(argID)
+        argID = path+str(arg) #TODO:Use tokens/refined argtypes
+        #inputs.append(argID) #TODO:Fix uniqueID
+        inputs.append(arg)
     scope = callNode.scope
-    color = 'red'
-    uniqueID = ''.join([field for field in callNode.scope])+callNode.name
+    color = 'maroon'
+    uniqueID = ''.join([str(field) for field in callNode.scope])+callNode.name
     
     node = DataNode(name, inputs, scope, color, uniqueID)
     return node
@@ -136,6 +141,16 @@ def create_CallNodes_from_FunctionCalls_and_DefNodes(defNodes, callList, exCallN
 
         
 
+def getDataNodeMx(dataNodes):
+    flowMx = []
 
+    #TODO: Dangling inputs
+    for node in dataNodes:
+        row = [0]*len(dataNodes)
+        for input in node.inputs:
+            for index, checkNode in enumerate(dataNodes):
+                if checkNode.name == input:
+                    row[index] = 1
+        flowMx.append(row)
 
-    
+    return flowMx

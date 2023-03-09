@@ -112,4 +112,3 @@ def getDataFlowData(constList,
         flowMx.append(row)
 
     return flowMx, allNodes
-
