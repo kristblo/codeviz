@@ -17,9 +17,9 @@ class DataNode(NamedTuple):
     uniqueID: str   #For use with inputs
 
 class AssignmentNode(NamedTuple):
-    name:  str
-    input: list
-    scope: Scope    
+    name:       str
+    input:      list
+    scope:      Scope    
 
 #"Virtual" node not to be visualised directly, informs edgecreation
 class DefNode(NamedTuple):
@@ -47,6 +47,24 @@ def dataNode_from_assignmentNode(assignmentNode):
     node = DataNode(name, inputs, scope, color, uniqueID)
     return node
 
+def dataNode_from_defNode(definitionNode):
+    name = definitionNode.name
+    inputs = []
+    try:
+        for callee in definitionNode.callees:
+            inputs.append(callee.name)#TODO: Fix uniqueIDs
+    except:
+        pass
+    for argtokens in definitionNode.args:
+        inputs.append(argtokens[-1]) #TODO: Create a symbol list
+
+    scope = definitionNode.scope
+    color = 'maroon'
+    uniqueID = ''.join([str(field) for field in scope])
+
+    node = DataNode(name, inputs, scope, color, uniqueID)
+    return node    
+
 #Effectively becomes a mix of call and its def
 def dataNode_from_callNode(callNode):
     name = callNode.name
@@ -73,6 +91,16 @@ def dataNode_from_callNode(callNode):
     
     node = DataNode(name, inputs, scope, color, uniqueID)
     return node
+
+
+def generateUniqueID(nodeObject):
+    uniqueID = ''
+
+    uniqueID += nodeObject.scope.filepath
+    uniqueID += nodeObject.name
+    uniqueID += nodeObject.scope.lineno
+
+    return uniqueID
 
 
 def create_AssignmentNodes_from_Consts(constantList, exConstNames):

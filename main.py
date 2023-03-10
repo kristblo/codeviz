@@ -61,15 +61,29 @@ for item in projectConstants:
 # from ply_tokenizer import get_variables
 # from ply_tokenizer import parse_file
 # ply_tokens = ply_tokenize('/home/kristian/byggern-nicer_code/misc.h')
-# vars=get_variablesv2(ply_tokens)
-# decs=get_function_declarations(ply_tokens)
-# calls=get_function_calls(ply_tokens)
-#p = parse_file('/home/kristian/byggern-nicer_code/misc.h')
+# vars=get_variablesflowGraph = Graph(directed=True)
+# for node in globalNodes:
+#     flowGraph.add_vertex()
 
-#print("VARS: \n%s \nDECS: \n %s\nCALLS\n%s" % (vars, decs, calls))
+# vtext = flowGraph.new_vertex_property("string")
+# for index, node in enumerate(globalNodes):
+#     vtext[index] = node.name
+
+# for i in range(0, len(flowMatrix)):
+#     for j in range(0, len(flowMatrix[i])):
+#         if flowMatrix[i][j] == 1:
+#             flowGraph.add_edge(j, i)
+
+# vpos = arf_layout(flowGraph, max_iter=1000)
+# graph_draw(flowGraph,
+#            pos=vpos,
+#            vertex_size=10,
+#            output_size=(2400, 2400),
+#            vertex_text=vtext,
+#            vertex_text_position=5,
+#            output="arf/dataflow.pdf")
 
 
-####DATAFLOW####
 
 #Construct dataNodes
 constantNodes = createNodesFromConstants(projectConstants, excludedConstNames)
@@ -99,12 +113,16 @@ for assignmentNode in assignmentNodes:
 for callNode in callNodes:
     dnode = dataNode_from_callNode(callNode)
     dataNodes.append(dnode)
+for definitionNode in definitionNodes:
+    if definitionNode.name == "main":
+        dnode = dataNode_from_defNode(definitionNode)
+        dataNodes.append(dnode)        
 
 dnodeLogfileName = getKeywordFromConfigFile(configFileName, 'dataNodeLog')
 for node in dataNodes:
     appendStringToFile(dnodeLogfileName, str(node)+'\n')
 
-
+#TODO: Make a node of the definition(s) of main as a special case
 dataNodeMatrix = getDataNodeMx(dataNodes)
 
 #Remove file paths to avoid cluttered output
@@ -426,59 +444,129 @@ for item in uniqueParentDirs:
 #############################################################################
 ##################################DATAFLOW###################################
 #############################################################################
-flowGraph = Graph(directed=True)
-for node in globalNodes:
-    flowGraph.add_vertex()
+# flowGraph = Graph(directed=True)
+# for node in globalNodes:
+#     flowGraph.add_vertex()
 
-vtext = flowGraph.new_vertex_property("string")
-for index, node in enumerate(globalNodes):
-    vtext[index] = node.name
+# vtext = flowGraph.new_vertex_property("string")
+# for index, node in enumerate(globalNodes):
+#     vtext[index] = node.name
 
-for i in range(0, len(flowMatrix)):
-    for j in range(0, len(flowMatrix[i])):
-        if flowMatrix[i][j] == 1:
-            flowGraph.add_edge(j, i)
+# for i in range(0, len(flowMatrix)):
+#     for j in range(0, len(flowMatrix[i])):
+#         if flowMatrix[i][j] == 1:
+#             flowGraph.add_edge(j, i)
 
-vpos = arf_layout(flowGraph, max_iter=1000)
-graph_draw(flowGraph,
-           pos=vpos,
-           vertex_size=10,
-           output_size=(2400, 2400),
-           vertex_text=vtext,
-           vertex_text_position=5,
-           output="arf/dataflow.pdf")
+# vpos = arf_layout(flowGraph, max_iter=1000)
+# graph_draw(flowGraph,
+#            pos=vpos,
+#            vertex_size=10,
+#            output_size=(2400, 2400),
+#            vertex_text=vtext,
+#            vertex_text_position=5,
+#            output="arf/dataflow.pdf")
 
 #############################################################################
 ##################################DATAFLOW_V2################################
 #############################################################################
-flowGraph = Graph(directed=True)
-for node in dataNodes:
-    flowGraph.add_vertex()
+# flowGraph = Graph(directed=True)
+# for node in dataNodes:
+#     flowGraph.add_vertex()
 
-vtext = flowGraph.new_vertex_property("string")
-for index, node in enumerate(dataNodes):
-    vtext[index] = node.name + '\n' + str(node.scope)
-    text = node.name
-    filename = os.path.basename(node.scope.filepath)
-    lineno = str(node.scope.lineno)
-    text += ' '+filename+' '+lineno
-    vtext[index] = text
+# vtext = flowGraph.new_vertex_property("string")
+# for index, node in enumerate(dataNodes):
+#     vtext[index] = node.name + '\n' + str(node.scope)
+#     text = node.name
+#     filename = os.path.basename(node.scope.filepath)
+#     lineno = str(node.scope.lineno)
+#     text += ' '+filename+' '+lineno
+#     vtext[index] = text
 
-vcolor = flowGraph.new_vertex_property("string")
-for index, node in enumerate(dataNodes):
-    vcolor[index] = node.color
+# vcolor = flowGraph.new_vertex_property("string")
+# for index, node in enumerate(dataNodes):
+#     vcolor[index] = node.color
 
-for i in range(0, len(dataNodeMatrix)):
-    for j in range(0, len(dataNodeMatrix[i])):
-        if dataNodeMatrix[i][j] == 1:
-            flowGraph.add_edge(j, i)
+# for i in range(0, len(dataNodeMatrix)):
+#     for j in range(0, len(dataNodeMatrix[i])):
+#         if dataNodeMatrix[i][j] == 1:
+#             flowGraph.add_edge(j, i)
 
-vpos = arf_layout(flowGraph, max_iter=1000)
-graph_draw(flowGraph,
-           pos=vpos,
-           vertex_size=10,
-           vertex_fill_color = vcolor,
-           output_size=(2400, 2400),
-           vertex_text=vtext,
-           vertex_text_position=5,
-           output="arf/dataflowv2.pdf")
+# vpos = arf_layout(flowGraph, max_iter=1000)
+# graph_draw(flowGraph,
+#            pos=vpos,
+#            vertex_size=10,
+#            vertex_fill_color = vcolor,
+#            output_size=(2400, 2400),
+#            vertex_text=vtext,
+#            vertex_text_position=5,
+#            output="arf/dataflowv2.pdf")
+
+# ####Grouped sfdp dflowv2
+# dataflowSFDP = Graph(directed=True)
+# dataflowSFDP.add_vertex(len(dataNodes))
+
+# vparents = dataflowSFDP.new_vertex_property("int") #Must be int >:(
+# scopes = [node.scope.filepath for node in dataNodes]
+# uniquescopes = []
+# for scope in scopes:
+#     if scope not in uniquescopes:
+#         uniquescopes.append(scope)
+# for i, scope in enumerate(scopes):
+#     for j, uniquescope in enumerate(uniquescopes):
+#         if scope == uniquescope:
+#             vparents[i] = j
+
+
+# vtext = dataflowSFDP.new_vertex_property("string")
+# for index, node in enumerate(dataNodes):
+#     vtext[index] = node.name + '\n' + str(node.scope)
+#     text = node.name
+#     filename = os.path.basename(node.scope.filepath)
+#     lineno = str(node.scope.lineno)
+#     text += ' '+filename+' '+lineno
+#     vtext[index] = text
+
+# vcolor = dataflowSFDP.new_vertex_property("string")
+# for index, node in enumerate(dataNodes):
+#     vcolor[index] = node.color
+
+# vpos = sfdp_layout(dataflowSFDP,
+#                    gamma=50,
+#                    r=1,
+#                    groups=vparents)
+
+# for i in range(0, len(dataNodeMatrix)):
+#     for j in range(0, len(dataNodeMatrix[i])):
+#         if dataNodeMatrix[i][j] == 1:
+#             dataflowSFDP.add_edge(j, i)
+
+# graph_draw(dataflowSFDP,
+#            pos=vpos,
+#            vertex_text=vtext,
+#            vertex_text_position=5,
+#            vertex_size=10,
+#            vertex_fill_color=vcolor,
+#            output_size=(2400,2400),
+#            output="sfdp/dataflowSFDP.pdf"
+#            )
+
+# #Test multiple gammas and rs
+# gammas = [0.3, 1, 3, 10, 30]
+# rs = [1, 5, 10, 20, 50]
+# for gamma in gammas:
+#     for r in rs:
+#         vpos = sfdp_layout(dataflowSFDP,
+#                            gamma=gamma,
+#                            r=r,
+#                            groups=vparents)
+#         op_string = "sfdp/dataflowv2/dfv2_g" \
+#                     + str(gamma) + "_r" + str(r) \
+#                     + ".pdf"
+#         graph_draw(dataflowSFDP,
+#                    pos=vpos,
+#                    vertex_text=vtext,
+#                    vertex_text_position=5,
+#                    vertex_size=10,
+#                    vertex_fill_color=vcolor,
+#                    output_size=(2400,2400),
+#                    output=op_string)
