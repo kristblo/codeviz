@@ -26,6 +26,7 @@ allFiles = filesFound + filesMentioned
 tokensPerFile = tokenizeProject(configFileName, filesFound)
 # for key in tokensPerFile:
 #     print(key, tokensPerFile[key][0:5])
+projectScopedTokens = parseProject(tokensPerFile)
 
 #Get function definitions and calls for entire project
 functionData = getProjectFunctionData(configFileName, tokensPerFile)
@@ -46,11 +47,10 @@ for item in functionCalls:
     appendStringToFile(funccalllog, str(item)+'\n')
 
 #Find (constant) assignments
-projectConstants = getProjectConstants(tokensPerFile)
+projectConstants = getProjectConstantsWScopes(projectScopedTokens)
 constLog = str(getKeywordFromConfigFile(configFileName, 'constantLog'))
 for item in projectConstants:    
     appendStringToFile(constLog, str(item)+'\n')
-
 
     
 #GPT code test

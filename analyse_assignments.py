@@ -3,6 +3,7 @@ import os
 from sys import exit
 from global_utilities import *
 from c_tokenizer import *
+from c_parser import *
 
 #Find and map all constants and assignments using token signatures
 class Constant(NamedTuple):
@@ -10,6 +11,7 @@ class Constant(NamedTuple):
   dtype: str #keyword?
   value: str #right side of assignment
   scope: list #idk, filename? Something to determine validity area
+
 
 #TODO:implement editability from txt file?
 sequences = [['ID', 'ID', 'ASSIGN', 'PAROPEN', 'ID', 'PARCLOSE', 'NUMBER', 'END'],
@@ -106,16 +108,17 @@ assignmentpatterns = [assignmentLeftSide, assignmentRightSide]
 
 #   return assignments
 
-def findAssignments(tokenList, currentFileName):
+def findAssignments(scopedTokenList):
   assignments = []
 
   leftSide = []
   rightSide = []
+  scope = []
   tokenIdx = 0
   while True:
     try:
-      currentToken = tokenList[tokenIdx]
-    except:
+      currentToken = scopedTokenList[tokenIdx].Tok
+    except:      
       print("Could not create token, probably EOF")
       break
 
@@ -123,25 +126,25 @@ def findAssignments(tokenList, currentFileName):
     for patternname in assignmentpatterns[0]():      
       pattern = assignmentpatterns[0]()[patternname]      
       try:
-        tokenListSlice = [token for token in tokenList[tokenIdx:tokenIdx+len(pattern)]]        
+        scopedTokenListSlice = [scopedToken for scopedToken in scopedTokenList[tokenIdx:tokenIdx+len(pattern)]]        
       except:
         continue #Use this to trigger right half finding?
-      tokenTypeSlice = [token.type for token in tokenListSlice]      
+      tokenTypeSlice = [scopedT.Tok.type for scopedT in scopedTokenListSlice]      
       if tokenTypeSlice == pattern:        
         if patternname == 'member':
-          leftSide = ['ASSIGNMENT_MEM', ''.join(token.value for token in tokenListSlice[0:3])]          
+          leftSide = ['ASSIGNMENT_MEM', ''.join(scopedT.Tok.value for scopedT in scopedTokenListSlice[0:3])]
         if patternname == 'common_p':
-          leftSide = [tokenListSlice[0].value+'*', tokenListSlice[2].value]
+          leftSide = [scopedTokenListSlice[0].Tok.value+'*', scopedTokenListSlice[2].Tok.value]
         if patternname == 'common':
-          leftSide = [tokenListSlice[0].value, tokenListSlice[1].value]
+          leftSide = [scopedTokenListSlice[0].Tok.value, scopedTokenListSlice[1].Tok.value]
         if patternname == 'decl':
           #We might actually not be interested in declarations.
           #They don't contain any data flow.
           #No, but they might be used for it later
-          leftSide = [tokenListSlice[0].value, tokenListSlice[1].value]
-          rightSide = ['DECL', str(tokenListSlice[0].line)]
+          leftSide = [scopedTokenListSlice[0].Tok.value, scopedTokenListSlice[1].Tok.value]
+          rightSide = ['DECL', str(scopedTokenListSlice[0].Tok.line)]
         if patternname == 'pure':
-          leftSide = ['ASSIGNMENT', tokenListSlice[0].value]
+          leftSide = ['ASSIGNMENT', scopedTokenListSlice[0].Tok.value]
         tokenIdx += len(pattern)-1 #token+=1 at end of loop
         break        
 
@@ -150,13 +153,16 @@ def findAssignments(tokenList, currentFileName):
       for patternname in assignmentpatterns[1]():
         pattern = assignmentpatterns[1]()[patternname]
         try:
-          tokenListSlice = [token for token in tokenList[tokenIdx:tokenIdx+len(pattern)]]
+          tokenListSlice = [scopedT.Tok for scopedT in scopedTokenList[tokenIdx:tokenIdx+len(pattern)]]
         except:
           continue
-        tokenTypeSlice = [token.type for token in tokenListSlice]        
+        tokenTypeSlice = [scopedT.Tok.type for scopedT in scopedTokenListSlice]        
         if tokenTypeSlice == pattern:         
           rightSide = [str(tokenListSlice[-2].value), str(tokenListSlice[-2].line)]
-          tokenIdx += len(pattern)-1
+          tokenIdx += len(pattern)-1          
+          scope = [scopedTokenList[tokenIdx].ScopeID] \
+                + [scopedTokenList[tokenIdx].Filepath]\
+                + [rightSide[1]]
           break          
 
     #Make the Constant object    
@@ -164,10 +170,10 @@ def findAssignments(tokenList, currentFileName):
       assignments.append(Constant(leftSide[1], \
                                   leftSide[0], \
                                   rightSide[0],\
-                                  [currentFileName, rightSide[1]]))
+                                  scope))
 
       leftSide = []
-      rightSide = []
+      rightSide = []      
 
     tokenIdx += 1
 
@@ -182,12 +188,17 @@ def updateConstantScopes(constList, filename):
 
 def getProjectConstants(tokenizedFiles):
   constantList = []
-  
   for file in tokenizedFiles:
     tokens = tokenizedFiles[file]
     localconsts = findAssignments(tokens, file)
     #scopedconsts = updateConstantScopes(localconsts, file)
     for item in localconsts:
       constantList.append(item)      
+  
+  return constantList
+
+def getProjectConstantsWScopes(scopedTokenList):
+
+  constantList = findAssignments(scopedTokenList)
   
   return constantList
