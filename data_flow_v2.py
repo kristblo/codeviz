@@ -6,8 +6,9 @@ from analyse_functions import *
 
 #For use with GraphTool
 class Scope(NamedTuple):
+    ScopeID:    list
     filepath:   str
-    lineno:     str
+    lineno:     int
 
 class DataNode(NamedTuple):
     name:     str   #The name of the node, as presented graphically
@@ -42,7 +43,8 @@ def dataNode_from_assignmentNode(assignmentNode):
     inputs = [assignmentNode.input] #TODO: Make unique?
     scope = assignmentNode.scope
     color = 'orange' #TODO: Find out if graph-tool takes color words
-    uniqueID = ''.join([field for field in scope])+name
+    #uniqueID = ''.join([field for field in scope])+name
+    uniqueID = "TODO: Use scope to fix uID"
     
     node = DataNode(name, inputs, scope, color, uniqueID)
     return node
@@ -60,7 +62,7 @@ def dataNode_from_defNode(definitionNode):
 
     scope = definitionNode.scope
     color = 'maroon'
-    uniqueID = ''.join([str(field) for field in scope])
+    uniqueID = "TODO: Use scope to fix uID"
 
     node = DataNode(name, inputs, scope, color, uniqueID)
     return node    
@@ -80,14 +82,12 @@ def dataNode_from_callNode(callNode):
         pass    
     for arg in callNode.arguments:
         #Assuming a function won't take an argument from outside
-        # its own file, and that arg.value is unique
-        path = callNode.scope.filepath
-        argID = path+str(arg) #TODO:Use tokens/refined argtypes
+        # its own file, and that arg.value is unique        
         #inputs.append(argID) #TODO:Fix uniqueID
         inputs.append(arg)
     scope = callNode.scope
     color = 'maroon'
-    uniqueID = ''.join([str(field) for field in callNode.scope])+callNode.name
+    uniqueID = "TODO: Use scope to fix uID"
     
     node = DataNode(name, inputs, scope, color, uniqueID)
     return node
@@ -111,7 +111,7 @@ def create_AssignmentNodes_from_Consts(constantList, exConstNames):
             continue
         name = const.name
         input = const.value
-        scope = Scope(const.scope[0], const.scope[1])
+        scope = Scope(const.scope[0], const.scope[1], const.scope[2])
 
         node = AssignmentNode(name, input, scope)
         assignmentNodes.append(node)
@@ -134,7 +134,7 @@ def create_DefNodes_from_FcDefs(fcDefList, exFcnames):
         rettype = fc.rettype
         signature = fc.signature
         callees = fc.callees #TODO:Change from FunctionCall to CallNode?
-        scope = Scope(fc.scope[0], fc.scope[1])
+        scope = Scope(fc.scope[0], fc.scope[1], fc.scope[2])
 
         node = DefNode(name, args, rettype, signature, callees, scope)        
         defNodes.append(node)
@@ -145,7 +145,7 @@ def create_CallNodes_from_FunctionCalls_and_DefNodes(defNodes, callList, exCallN
     callNodes = []
 
     for fc in callList:
-        fcObj = fc[1]
+        fcObj = fc
         if fcObj.name in exCallNames:
             continue
         name = fcObj.name
@@ -160,7 +160,7 @@ def create_CallNodes_from_FunctionCalls_and_DefNodes(defNodes, callList, exCallN
             if defNode.name == name:
                 definition = defNode
                 break
-        scope = Scope(fcObj.scope[0], fcObj.scope[1])
+        scope = Scope(fcObj.scope[0], fcObj.scope[1], fcObj.scope[2])
 
         node = CallNode(name, arguments, definition, scope)
         callNodes.append(node)

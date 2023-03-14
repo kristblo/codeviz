@@ -29,7 +29,7 @@ def createNodesFromFcCalls(fcCallList, excludedFcNames):
     dataNodes = []
 
     for fc in fcCallList:
-        fcObject = fc[1]        
+        fcObject = fc
         outputs = []
         inputs = []
 

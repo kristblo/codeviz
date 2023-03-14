@@ -4,6 +4,7 @@ from analyse_includes import *
 from analyse_functions import *
 from analyse_assignments import *
 from data_flow import *
+from analyse_functions_scoped import *
 import random
 
 configFileName = 'byggern_project_config.cnf'
@@ -28,19 +29,26 @@ tokensPerFile = tokenizeProject(configFileName, filesFound)
 #     print(key, tokensPerFile[key][0:5])
 projectScopedTokens = parseProject(tokensPerFile)
 
-#Get function definitions and calls for entire project
-functionData = getProjectFunctionData(configFileName, tokensPerFile)
-functionDefinitionsPerFile =  functionData[0]
-functionCalls = functionData[1]
-functionGlobalDefs = functionData[2]
-undefinedCallees = functionData[3]
-functionMatrix = functionData[4]
+##Get function definitions and calls for entire project
+
+# functionData = getProjectFunctionData(configFileName, tokensPerFile)
+# functionDefinitionsPerFile =  functionData[0]
+# functionCalls = functionData[1]
+# functionGlobalDefs = functionData[2]
+# undefinedCallees = functionData[3]
+# functionMatrix = functionData[4]
+
+functiondata = getProjectFunctionData_scoped(projectScopedTokens)
+functionDefinitionsPerFile = functiondata[0]
+functionCalls = functiondata[1]
+functionGlobalDefs = functiondata[2]
+undefinedCallees = functiondata[3]
+functionMatrix = functiondata[4]
+
 
 funcdeflog = str(getKeywordFromConfigFile(configFileName, 'functiondeflog'))
-for item in functionDefinitionsPerFile:    
-    appendStringToFile(funcdeflog, str(item[0])+'\n')
-    for name in item[1]:
-        appendStringToFile(funcdeflog, str(name)+'\n')
+for item in functionGlobalDefs:    
+    appendStringToFile(funcdeflog, str(item)+'\n')
 
 funccalllog = str(getKeywordFromConfigFile(configFileName, 'functioncallog'))
 for item in functionCalls:
@@ -469,104 +477,104 @@ for item in uniqueParentDirs:
 #############################################################################
 ##################################DATAFLOW_V2################################
 #############################################################################
-# flowGraph = Graph(directed=True)
-# for node in dataNodes:
-#     flowGraph.add_vertex()
+flowGraph = Graph(directed=True)
+for node in dataNodes:
+    flowGraph.add_vertex()
 
-# vtext = flowGraph.new_vertex_property("string")
-# for index, node in enumerate(dataNodes):
-#     vtext[index] = node.name + '\n' + str(node.scope)
-#     text = node.name
-#     filename = os.path.basename(node.scope.filepath)
-#     lineno = str(node.scope.lineno)
-#     text += ' '+filename+' '+lineno
-#     vtext[index] = text
+vtext = flowGraph.new_vertex_property("string")
+for index, node in enumerate(dataNodes):
+    vtext[index] = node.name + '\n' + str(node.scope)
+    text = node.name    
+    filename = os.path.basename(node.scope.filepath)
+    lineno = str(node.scope.lineno)
+    text += ' '+filename+' '+lineno
+    vtext[index] = text
 
-# vcolor = flowGraph.new_vertex_property("string")
-# for index, node in enumerate(dataNodes):
-#     vcolor[index] = node.color
+vcolor = flowGraph.new_vertex_property("string")
+for index, node in enumerate(dataNodes):
+    vcolor[index] = node.color
 
-# for i in range(0, len(dataNodeMatrix)):
-#     for j in range(0, len(dataNodeMatrix[i])):
-#         if dataNodeMatrix[i][j] == 1:
-#             flowGraph.add_edge(j, i)
+for i in range(0, len(dataNodeMatrix)):
+    for j in range(0, len(dataNodeMatrix[i])):
+        if dataNodeMatrix[i][j] == 1:
+            flowGraph.add_edge(j, i)
 
-# vpos = arf_layout(flowGraph, max_iter=1000)
-# graph_draw(flowGraph,
-#            pos=vpos,
-#            vertex_size=10,
-#            vertex_fill_color = vcolor,
-#            output_size=(2400, 2400),
-#            vertex_text=vtext,
-#            vertex_text_position=5,
-#            output="arf/dataflowv2.pdf")
+vpos = arf_layout(flowGraph, max_iter=1000)
+graph_draw(flowGraph,
+           pos=vpos,
+           vertex_size=10,
+           vertex_fill_color = vcolor,
+           output_size=(2400, 2400),
+           vertex_text=vtext,
+           vertex_text_position=5,
+           output="arf/dataflowv2.pdf")
 
-# ####Grouped sfdp dflowv2
-# dataflowSFDP = Graph(directed=True)
-# dataflowSFDP.add_vertex(len(dataNodes))
+####Grouped sfdp dflowv2
+dataflowSFDP = Graph(directed=True)
+dataflowSFDP.add_vertex(len(dataNodes))
 
-# vparents = dataflowSFDP.new_vertex_property("int") #Must be int >:(
-# scopes = [node.scope.filepath for node in dataNodes]
-# uniquescopes = []
-# for scope in scopes:
-#     if scope not in uniquescopes:
-#         uniquescopes.append(scope)
-# for i, scope in enumerate(scopes):
-#     for j, uniquescope in enumerate(uniquescopes):
-#         if scope == uniquescope:
-#             vparents[i] = j
+vparents = dataflowSFDP.new_vertex_property("int") #Must be int >:(
+scopes = [node.scope.filepath for node in dataNodes]
+uniquescopes = []
+for scope in scopes:
+    if scope not in uniquescopes:
+        uniquescopes.append(scope)
+for i, scope in enumerate(scopes):
+    for j, uniquescope in enumerate(uniquescopes):
+        if scope == uniquescope:
+            vparents[i] = j
 
 
-# vtext = dataflowSFDP.new_vertex_property("string")
-# for index, node in enumerate(dataNodes):
-#     vtext[index] = node.name + '\n' + str(node.scope)
-#     text = node.name
-#     filename = os.path.basename(node.scope.filepath)
-#     lineno = str(node.scope.lineno)
-#     text += ' '+filename+' '+lineno
-#     vtext[index] = text
+vtext = dataflowSFDP.new_vertex_property("string")
+for index, node in enumerate(dataNodes):
+    vtext[index] = node.name + '\n' + str(node.scope)
+    text = node.name
+    filename = os.path.basename(node.scope.filepath)
+    lineno = str(node.scope.lineno)
+    text += ' '+filename+' '+lineno
+    vtext[index] = text
 
-# vcolor = dataflowSFDP.new_vertex_property("string")
-# for index, node in enumerate(dataNodes):
-#     vcolor[index] = node.color
+vcolor = dataflowSFDP.new_vertex_property("string")
+for index, node in enumerate(dataNodes):
+    vcolor[index] = node.color
 
-# vpos = sfdp_layout(dataflowSFDP,
-#                    gamma=50,
-#                    r=1,
-#                    groups=vparents)
+vpos = sfdp_layout(dataflowSFDP,
+                   gamma=50,
+                   r=1,
+                   groups=vparents)
 
-# for i in range(0, len(dataNodeMatrix)):
-#     for j in range(0, len(dataNodeMatrix[i])):
-#         if dataNodeMatrix[i][j] == 1:
-#             dataflowSFDP.add_edge(j, i)
+for i in range(0, len(dataNodeMatrix)):
+    for j in range(0, len(dataNodeMatrix[i])):
+        if dataNodeMatrix[i][j] == 1:
+            dataflowSFDP.add_edge(j, i)
 
-# graph_draw(dataflowSFDP,
-#            pos=vpos,
-#            vertex_text=vtext,
-#            vertex_text_position=5,
-#            vertex_size=10,
-#            vertex_fill_color=vcolor,
-#            output_size=(2400,2400),
-#            output="sfdp/dataflowSFDP.pdf"
-#            )
+graph_draw(dataflowSFDP,
+           pos=vpos,
+           vertex_text=vtext,
+           vertex_text_position=5,
+           vertex_size=10,
+           vertex_fill_color=vcolor,
+           output_size=(2400,2400),
+           output="sfdp/dataflowSFDP.pdf"
+           )
 
-# #Test multiple gammas and rs
-# gammas = [0.3, 1, 3, 10, 30]
-# rs = [1, 5, 10, 20, 50]
-# for gamma in gammas:
-#     for r in rs:
-#         vpos = sfdp_layout(dataflowSFDP,
-#                            gamma=gamma,
-#                            r=r,
-#                            groups=vparents)
-#         op_string = "sfdp/dataflowv2/dfv2_g" \
-#                     + str(gamma) + "_r" + str(r) \
-#                     + ".pdf"
-#         graph_draw(dataflowSFDP,
-#                    pos=vpos,
-#                    vertex_text=vtext,
-#                    vertex_text_position=5,
-#                    vertex_size=10,
-#                    vertex_fill_color=vcolor,
-#                    output_size=(2400,2400),
-#                    output=op_string)
+#Test multiple gammas and rs
+gammas = [0.3, 1, 3, 10, 30]
+rs = [1, 5, 10, 20, 50]
+for gamma in gammas:
+    for r in rs:
+        vpos = sfdp_layout(dataflowSFDP,
+                           gamma=gamma,
+                           r=r,
+                           groups=vparents)
+        op_string = "sfdp/dataflowv2/dfv2_g" \
+                    + str(gamma) + "_r" + str(r) \
+                    + ".pdf"
+        graph_draw(dataflowSFDP,
+                   pos=vpos,
+                   vertex_text=vtext,
+                   vertex_text_position=5,
+                   vertex_size=10,
+                   vertex_fill_color=vcolor,
+                   output_size=(2400,2400),
+                   output=op_string)

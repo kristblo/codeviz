@@ -22,7 +22,7 @@ def findCandidateFuncs_scoped(scopedTokenList):
         if scopedT.Tok.type == 'ID' \
             and scopedT.Tok.value not in language_keywords\
             and scopedTokenList[index+1].Tok.type == 'PAROPEN':
-            candidates.append(index, scopedT)
+            candidates.append((index, scopedT))
     return candidates
 
 def sortCandidateFuncs_scoped(candList, scopedTokenList):
@@ -41,14 +41,14 @@ def sortCandidateFuncs_scoped(candList, scopedTokenList):
         currentScopedTIdx = index + 2
         while parenthesesCt > 0:
             currentToken = scopedTokenList[currentScopedTIdx]
-            if currentScopedTIdx.Tok.type == 'PAROPEN':
+            if currentToken.Tok.type == 'PAROPEN':
                 parenthesesCt += 1
-            if currentScopedTIdx.Tok.type == 'PARCLOSE':
+            if currentToken.Tok.type == 'PARCLOSE':
                 parenthesesCt -= 1
             currentScopedTIdx += 1
 
         if scopedTokenList[currentScopedTIdx].Tok.type == 'BRACEOPEN':
-            defs.append(candidate)
+            defs.append(candidate)            
         elif scopedTokenList[currentScopedTIdx].Tok.type == 'END' and isCall == 0:
             decs.append(candidate)
         elif isCall == 1:
@@ -88,10 +88,11 @@ def parseArguments_scoped(index, scopedTokenList):
 
     return args
 
-def parseDefinitions(candidateDefList, scopedTokenList):
+def parseDefinitions_scoped(candidateDefList, scopedTokenList):
     definitions = []
-    for candidate in candidateDefList:
-        index = candidate[0]
+
+    for candidate in candidateDefList:      
+        index = candidate[0]        
         args = parseArguments_scoped(index, scopedTokenList)
 
         rettype = ''
@@ -114,25 +115,104 @@ def parseDefinitions(candidateDefList, scopedTokenList):
             signature.append(sigPart)
             sigPart = ''
         
-        callees = findCallees_scoped()
+        callees = findCallees_scoped(candidateDefList, scopedTokenList)        
         scope = [scopedTokenList[candidate[0]].ScopeID] \
                 + [scopedTokenList[candidate[0]].Filepath]\
                 + [scopedTokenList[candidate[0]].Tok.line]
+                
         definitions.append(FunctionDef(candidate[1].Tok.value,
                                        args,
                                        rettype,
                                        signature,
                                        callees,
-                                       scope))
-        return definitions
-    
+                                       scope))        
+    return definitions
+   
 
 
 def findCallees_scoped(candidateDef, scopedTokenList):
-    scopedTIdx = candidateDef[0]
-    defintionScope = scopedTokenList[scopedTIdx].ScopeID
+    scopedTIdx = candidateDef[0][0]
+    bodyStart = 0
+    bodyEnd = 0
+    braceCt = 0
+        
+    for i in range(scopedTIdx, len(scopedTokenList)):
+        if scopedTokenList[i].Tok.type == 'BRACEOPEN':
+            bodyStart = i
+            scopedTIdx = i + 1
+            braceCt = 1
+            break
+
+    while braceCt > 0:
+        if scopedTokenList[scopedTIdx].Tok.type == 'BRACEOPEN':
+            braceCt += 1
+        if scopedTokenList[scopedTIdx].Tok.type == 'BRACECLOSE':
+            braceCt -= 1
+        scopedTIdx += 1
+        bodyEnd = scopedTIdx
+    
+    bodyScopedTokens = scopedTokenList[bodyStart:bodyEnd]
+    candidates = findCandidateFuncs_scoped(bodyScopedTokens)
+    calleeCands = sortCandidateFuncs_scoped(candidates, bodyScopedTokens)[2]
+    callees = parseCalls_scoped(calleeCands, bodyScopedTokens)
+
+    return callees
+
+def parseCalls_scoped(candidateCallList, scopedTokenList):
+    calls = []
+    for candidate in candidateCallList:
+        index = candidate[0]
+        args = parseArguments_scoped(index, scopedTokenList)
+        
+        scope = [candidate[1].ScopeID] \
+                + [candidate[1].Filepath] \
+                + [candidate[1].Tok.line]
+        calls.append(FunctionCall(candidate[1].Tok.value, args, scope))
+        
+    return calls
+
+def getProjectFunctionData_scoped(scopedTokenList):
+
+    candidates = findCandidateFuncs_scoped(scopedTokenList)
+    sortedCandidates = sortCandidateFuncs_scoped(candidates, scopedTokenList)
+
+    defCandidates = sortedCandidates[1]    
+    definitions = parseDefinitions_scoped(defCandidates, scopedTokenList)
+
+    callCandidates = sortedCandidates[2]
+    calls = parseCalls_scoped(callCandidates, scopedTokenList)
+    
+    globalDefNames = [definition.name for definition in definitions]
+
+    undefinedCallees = []
+    for definition in definitions:        
+        calleeNames = [callee.name for callee in definition.callees]
+        for calleeName in calleeNames:
+            if (calleeName not in globalDefNames) and \
+                (calleeName not in undefinedCallees):
+                undefinedCallees.append(calleeName)
+    
+    fcMx = []
+    for i, thisDefinition in enumerate(definitions):
+        thisDefsRow = [0]*len(definitions) + [0]*len(undefinedCallees)
+        callees = thisDefinition.callees
+
+        calleeNames = [callee.name for callee in callees]
+        for thisCalleeName in calleeNames:
+            for j, defName in enumerate(globalDefNames):
+                if thisCalleeName == defName:
+                    thisDefsRow[j] == 1
+            for j, undefined in enumerate(undefinedCallees):
+                rowIdx = len(globalDefNames)
+                if thisCalleeName == undefined:
+                    thisDefsRow[rowIdx] = 1
+        fcMx.append(thisDefsRow)
+
+    return definitions, calls, definitions, undefinedCallees, fcMx
+                    
+
+        
 
 
-    return 0
 
 
