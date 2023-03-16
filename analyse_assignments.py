@@ -4,13 +4,14 @@ from sys import exit
 from global_utilities import *
 from c_tokenizer import *
 from c_parser import *
+from data_flow_v2 import Scope
 
 #Find and map all constants and assignments using token signatures
 class Constant(NamedTuple):
   name: str
   dtype: str #keyword?
   value: str #right side of assignment
-  scope: list #idk, filename? Something to determine validity area
+  scope: Scope #idk, filename? Something to determine validity area
 
 
 #TODO:implement editability from txt file?
@@ -153,16 +154,19 @@ def findAssignments(scopedTokenList):
       for patternname in assignmentpatterns[1]():
         pattern = assignmentpatterns[1]()[patternname]
         try:
-          tokenListSlice = [scopedT.Tok for scopedT in scopedTokenList[tokenIdx:tokenIdx+len(pattern)]]
+          scopedTokenListSlice = [scopedT for scopedT in scopedTokenList[tokenIdx:tokenIdx+len(pattern)]]
         except:
           continue
         tokenTypeSlice = [scopedT.Tok.type for scopedT in scopedTokenListSlice]        
         if tokenTypeSlice == pattern:         
-          rightSide = [str(tokenListSlice[-2].value), str(tokenListSlice[-2].line)]
+          rightSide = [str(scopedTokenListSlice[-2].Tok.value), str(scopedTokenListSlice[-2].Tok.line)]
           tokenIdx += len(pattern)-1          
-          scope = [scopedTokenList[tokenIdx].ScopeID] \
-                + [scopedTokenList[tokenIdx].Filepath]\
-                + [rightSide[1]]
+          # scope = [scopedTokenList[tokenIdx].ScopeID] \
+          #       + [scopedTokenList[tokenIdx].Filepath]\
+          #       + [rightSide[1]]
+          scope = Scope(scopedTokenList[tokenIdx].ScopeID,
+                        scopedTokenList[tokenIdx].Filepath,
+                        scopedTokenList[tokenIdx].Tok.line)
           break          
 
     #Make the Constant object    

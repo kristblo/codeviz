@@ -40,11 +40,18 @@ class CallNode(NamedTuple):
 
 def dataNode_from_assignmentNode(assignmentNode):
     name = assignmentNode.name
-    inputs = [assignmentNode.input] #TODO: Make unique?
+    #inputs = [assignmentNode.input] #TODO: Make unique?
+
+    inputstr = ''
+    inputstr += ''.join([str(num) for num in assignmentNode.scope.ScopeID])
+    inputstr += assignmentNode.input
+    inputstr += str(assignmentNode.scope.lineno)
+    inputs = [inputstr]
+
     scope = assignmentNode.scope
     color = 'orange' #TODO: Find out if graph-tool takes color words
     #uniqueID = ''.join([field for field in scope])+name
-    uniqueID = "TODO: Use scope to fix uID"
+    uniqueID = generateUniqueID(assignmentNode)
     
     node = DataNode(name, inputs, scope, color, uniqueID)
     return node
@@ -52,17 +59,24 @@ def dataNode_from_assignmentNode(assignmentNode):
 def dataNode_from_defNode(definitionNode):
     name = definitionNode.name
     inputs = []
-    try:
-        for callee in definitionNode.callees:
-            inputs.append(callee.name)#TODO: Fix uniqueIDs
-    except:
-        pass
-    for argtokens in definitionNode.args:
-        inputs.append(argtokens[-1]) #TODO: Create a symbol list
+    for callee in definitionNode.callees:
+        try:
+            calleeID = ''
+            calleeID += ''.join([str(num) for num in callee.scope[0]])
+            calleeID += callee.name
+            calleeID += str(callee.scope[2])
+            inputs.append(calleeID)            
+        except:
+            print("Could not generate calleID for %s at %s, %s" %(name, callee.scope, callee.scope))
 
+    # for argtokens in definitionNode.args:
+    #     inputs.append(argtokens[-1]) #TODO: Create a symbol list
+    for arg in definitionNode.args:
+        inputs.append(arg)
+
+    uniqueID = generateUniqueID(definitionNode)
     scope = definitionNode.scope
     color = 'maroon'
-    uniqueID = "TODO: Use scope to fix uID"
 
     node = DataNode(name, inputs, scope, color, uniqueID)
     return node    
@@ -70,24 +84,37 @@ def dataNode_from_defNode(definitionNode):
 #Effectively becomes a mix of call and its def
 def dataNode_from_callNode(callNode):
     name = callNode.name
-    
     inputs = [] #Predictably calculable uniqueIDs for args and callees
-    try:
+    
+    if callNode.definition != '':
         for callee in callNode.definition.callees:
-            calleeID = ''.join([str(field) for field in callee.scope])+callee.name
-            #inputs.append(calleeID) #TODO: Fix uniqueIDs
-            inputs.append(callee.name)
-
-    except:
-        pass    
+            #print("callee: ", callee.scope)            
+            try:
+                calleeID = ''
+                calleeID += ''.join([str(num) for num in callee.scope[0]])
+                calleeID += callee.name
+                calleeID += str(callee.scope[2])
+                inputs.append(calleeID)                            
+            except:
+                print("Could not generate calleeID for %s at %s, %s" %(name, callNode.scope.filepath, callNode.scope.lineno))
+                pass
+    
     for arg in callNode.arguments:
         #Assuming a function won't take an argument from outside
         # its own file, and that arg.value is unique        
-        #inputs.append(argID) #TODO:Fix uniqueID
+        #inputs.append(argID) #TODO:Fix uniqueID        
         inputs.append(arg)
+        try:
+            if arg != []:
+                argID = generateUniqueID(arg)
+                inputs.append(argID)
+        except:
+            print("Could not generate argID for %s at %s, %s" %(name, callNode.scope.filepath, callNode.scope.lineno))
+            pass            
+
     scope = callNode.scope
     color = 'maroon'
-    uniqueID = "TODO: Use scope to fix uID"
+    uniqueID = generateUniqueID(callNode)
     
     node = DataNode(name, inputs, scope, color, uniqueID)
     return node
@@ -95,11 +122,11 @@ def dataNode_from_callNode(callNode):
 
 def generateUniqueID(nodeObject):
     uniqueID = ''
-
-    uniqueID += nodeObject.scope.filepath
+    
+    uniqueID += ''.join([str(field) for field in nodeObject.scope.ScopeID])
     uniqueID += nodeObject.name
-    uniqueID += nodeObject.scope.lineno
-
+    uniqueID += str(nodeObject.scope.lineno)
+    
     return uniqueID
 
 
@@ -107,7 +134,7 @@ def create_AssignmentNodes_from_Consts(constantList, exConstNames):
     assignmentNodes = []
 
     for const in constantList:
-        if const.name in exConstNames:
+        if const.name in exConstNames or const.value in language_keywords:
             continue
         name = const.name
         input = const.value
@@ -125,12 +152,12 @@ def create_DefNodes_from_FcDefs(fcDefList, exFcnames):
         if fc.name in exFcnames:
             continue
         name = fc.name
-        args = []
-        for argTokenVals in fc.args:
-            try:
-                args.append(argTokenVals[-1]) #TODO:Make robust enough to return type as well
-            except:
-                continue
+        args = fc.args
+        # for argTokenVals in fc.args:
+        #     try:
+        #         args.append(argTokenVals[-1]) #TODO:Make robust enough to return type as well
+        #     except:
+        #         continue
         rettype = fc.rettype
         signature = fc.signature
         callees = fc.callees #TODO:Change from FunctionCall to CallNode?
@@ -148,13 +175,13 @@ def create_CallNodes_from_FunctionCalls_and_DefNodes(defNodes, callList, exCallN
         fcObj = fc
         if fcObj.name in exCallNames:
             continue
-        name = fcObj.name
-        arguments = []
-        for argTokenVals in fcObj.args:
-            try:
-                arguments.append(argTokenVals[-1]) #TODO:Use tokens instead
-            except:
-                continue
+        name = fcObj.name                    
+        arguments = fcObj.args
+        # for argTokenVals in fcObj.args:
+        #     try:
+        #         arguments.append(argTokenVals[-1]) #TODO:Use tokens instead
+        #     except:
+        #         continue
         definition = ''
         for defNode in defNodes:
             if defNode.name == name:
@@ -172,13 +199,39 @@ def create_CallNodes_from_FunctionCalls_and_DefNodes(defNodes, callList, exCallN
 def getDataNodeMx(dataNodes):
     flowMx = []
 
-    #TODO: Dangling inputs
+    # #TODO: Dangling inputs
+    # for node in dataNodes:
+    #     row = [0]*len(dataNodes)
+    #     for input in node.inputs:
+    #         for index, checkNode in enumerate(dataNodes):
+    #             if checkNode.name == input:
+    #                 row[index] = 1
+    #     flowMx.append(row)
+
+    #Finding inputs using
+    #1. uniqueIDs
+        #if the uniqueID of one node matches an input of another,
+        #then an edge should certainly be added
+    #2. scope understanding
+        #the uniqueID of an argument wouldn't match that of the corresponding
+        #symbol as they would have different linenos.
+        #Equal scope and equal name is should be a hit
+        #Higher(?) scope and equal name should be a hit
+    #3. Dangler heuristics
+        #Some inputs will be lists of ScopedTokens.
+        #Compare scope of ST with that of a symbol,
+        #and/or the name/value of the ST with that of a symbol.
+        #If none are found, create a node using the information in the dangler
+        #and add it to the list of inputs/outputs
     for node in dataNodes:
         row = [0]*len(dataNodes)
         for input in node.inputs:
             for index, checkNode in enumerate(dataNodes):
-                if checkNode.name == input:
+                if checkNode.uniqueID == input:
                     row[index] = 1
+
         flowMx.append(row)
+
+    
 
     return flowMx

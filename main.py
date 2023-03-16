@@ -122,7 +122,8 @@ for callNode in callNodes:
     dnode = dataNode_from_callNode(callNode)
     dataNodes.append(dnode)
 for definitionNode in definitionNodes:
-    if definitionNode.name == "main":
+    #Include functions that have been defined but not called, such as main
+    if definitionNode.name not in [call.name for call in callNodes]:
         dnode = dataNode_from_defNode(definitionNode)
         dataNodes.append(dnode)        
 
