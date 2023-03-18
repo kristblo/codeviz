@@ -103,11 +103,12 @@ def dataNode_from_callNode(callNode):
         #Assuming a function won't take an argument from outside
         # its own file, and that arg.value is unique        
         #inputs.append(argID) #TODO:Fix uniqueID        
-        inputs.append(arg)
+        #inputs.append(arg)
         try:
             if arg != []:
                 argID = generateUniqueID(arg)
                 inputs.append(argID)
+
         except:
             print("Could not generate argID for %s at %s, %s" %(name, callNode.scope.filepath, callNode.scope.lineno))
             pass            

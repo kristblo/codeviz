@@ -170,6 +170,7 @@ def parseArguments_scoped(index, scopedTokenList):
                                     scopedTokenListSlice[1].Filepath,
                                     scopedTokenListSlice[1].Tok.line)
                     argConst = Constant(name, dtype, value, scope)
+                    argConstObjects.append(argConst)
                     constCreationSuccessful = 1
                     break
 
@@ -181,6 +182,7 @@ def parseArguments_scoped(index, scopedTokenList):
                                     scopedTokenListSlice[1].Filepath,
                                     scopedTokenListSlice[1].Tok.line)
                     argConst = Constant(name, dtype, value, scope)
+                    argConstObjects.append(argConst)
                     constCreationSuccessful = 1
                     break
 
