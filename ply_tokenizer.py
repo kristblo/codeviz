@@ -14,10 +14,10 @@ tokens = [
     'COMMENT',
     'LCOMMENT',
     'ID',
-    # 'INT',
-    # 'FLOAT',
-    # 'CHAR',
-    'STRING',    
+    'INT_L', #Int literal; literally an int
+    'FLOAT_L',
+    'CHAR_L',
+    'STRING_L',    
     'PLUS',
     'MINUS',
     'ASTERISK',
@@ -49,7 +49,7 @@ tokens = [
     'LSHIFT',
     'RSHIFT',
     'INCREMENT',
-    'NONDECIMAL'
+    'NONDECIMAL_L'
 ]+list(keywordDict.values())
 
 reserved = list(keywordDict.values())
@@ -107,28 +107,28 @@ def t_ID(t):
         t.type = t.value.upper()        
     return t
 
-def t_NONDECIMAL(t):
+def t_NONDECIMAL_L(t):
     r'0[xb]\d+'
     t.value = int(t.value[2:])
     return t
 
-def t_FLOAT(t):
+def t_FLOAT_L(t):
     r'\d+\.\d+'
     t.value = float(t.value)
     return t
 
-def t_INT(t):
+def t_INT_L(t):
     r'\d+'
     t.value = int(t.value)
     return t
 
 
-def t_CHAR(t):
+def t_CHAR_L(t):
     r'\'[^\']*\''
     t.value = t.value[1:-1]
     return t
 
-def t_STRING(t):
+def t_STRING_L(t):
     r'\"[^\"]*\"'
     t.value = t.value[1:-1]
     return t
@@ -173,19 +173,23 @@ def p_node_list(p):
 
 def p_node(p):
     ''' node : include
-             | func_def             
-             | func_call
+             | define
+             | if
+             | func_def                          
+             | func_decl
              | statement
-             | control_expr'''
+             | control_expr
+             | struct_def'''
 
     p[0] = p[1]
 
+#Convenience groups
 def p_literal(p):
-    '''literal  : FLOAT
-                | INT
-                | CHAR
-                | STRING
-                | NONDECIMAL'''
+    '''literal  : FLOAT_L
+                | INT_L
+                | CHAR_L
+                | STRING_L
+                | NONDECIMAL_L'''
     p[0] = p[1]
 
 def p_assign(p):
@@ -193,14 +197,26 @@ def p_assign(p):
               | COMPLEX_ASSIGN'''
     p[0] = p[1]
 
+def p_struct_type(p):
+    '''struct_type : STRUCT ID'''
+    p[0] = p[2]
+
+def p_type_cast(p):
+    '''type_cast : LPAREN dtype RPAREN'''
+
+
+#TODO: Replace ID with a more robust solution for typedef'd structs! Look at name lookup in calc.py
 def p_dtype(p):
     '''dtype : CHAR             
              | DOUBLE
              | FLOAT
              | INT
+             | STRUCT
              | VOID
              | UINT8_T
              | UINT16_T
+             | struct_type
+             | ID
              | dtype ASTERISK'''
     p[0] = p[1]
 
@@ -214,6 +230,13 @@ def p_modifier(p):
                 | UNSIGNED
                 | VOLATILE
                 '''
+    p[0] = p[1]
+
+def p_names(p):
+    '''name : ID
+            | literal
+            | access'''
+    p[0] = p[1]
 
 #Preprocessor statements
 class IncludeNode(NamedTuple):
@@ -221,11 +244,25 @@ class IncludeNode(NamedTuple):
     value: str
     user: str
 
+class DefineNode(NamedTuple):
+    type = 'Define'
+    value : str
+
+
 def p_include(p):
     '''include : INCLUDE'''
     incnode = IncludeNode(p[1], "filename")
     p[0] = incnode
 
+def p_define(p):
+    '''define : DEFINE '''
+    p[0] = DefineNode(p[1])
+
+def p_ifs(p):
+    '''if : IFNDEF
+          | ENDIF'''
+    p[0] = p[1]
+    
 
 #Scopes
 
@@ -250,10 +287,11 @@ def p_conditionals(p):
     p[0] = p[1]
 
 def p_conditional_expr(p):
-    '''conditional_expr : ID conditional expression
-                        | expression conditional ID
+    '''conditional_expr : name conditional expression
+                        | expression conditional name
                         | expression conditional expression
-                        | ID conditional ID'''
+                        | name conditional name
+                        | name'''
     p[0] = 'condexpr'
 
 def p_for_loop(p):
@@ -273,15 +311,19 @@ class ArgumentNode(NamedTuple):
     dtype : str
 
 def p_func_arg(p):
-    '''func_arg : ID
-                | expression
-                | dtype ID
-                | dtype
-                '''
+    '''func_arg : name                
+                | dtype name
+                | dtype                
+                | type_cast name
+                | type_cast expression
+                | func_call
+                | type_cast func_call'''
     if len(p) == 2:
         p[0] = ArgumentNode(str(p[1]), str(p[1]))
     elif len(p) == 3:
-        p[0] = ArgumentNode(str(p[2].value), str(p[1].value))
+        p[0] = ArgumentNode(str(p[2]), str(p[1]))
+    elif len(p) == 5:
+        p[0] = ArgumentNode(str(p[4]), str(p[2]))
 
 def p_func_arglist(p):
     '''func_arglist : 
@@ -312,11 +354,41 @@ class FunctionCallNode(NamedTuple):
     args: list
 
 def p_func_call(p):
-    '''func_call : ID LPAREN func_arglist RPAREN SEMI
+    '''func_call : ID LPAREN func_arglist RPAREN
                  '''    
     p[0] = FunctionCallNode(str(p[1]), p[3])
 
+class FunctionDeclNode(NamedTuple):
+    type = 'FunctionDef'
+    name:       str
+    args:       list #of tuples, for type check
+    rettype:    str  #for type check in call
+
+def p_func_decl(p):
+    '''func_decl : dtype ID LPAREN func_arglist RPAREN SEMI'''
+    p[0] = FunctionDeclNode(str(p[2]), p[4], str(p[1]))
+
 #Structs
+class AccessNode(NamedTuple):
+    type = 'Access'
+    accessor : str
+    accessee : str
+
+def p_access(p):
+    '''access : name LBRACK name RBRACK
+              | name LBRACK expression RBRACK
+              | name MEMBER name'''
+    p[0] = AccessNode(str(p[1]), str(p[3]))
+
+class StructNode(NamedTuple):
+    type = 'StructDef'
+    name : str
+    members : list
+
+def p_struct_def(p):
+    '''struct_def : STRUCT ID LBRACE node_list RBRACE SEMI'''
+    p[0] = StructNode(str(p[2]), p[4])
+
 
 #Classes
 
@@ -325,22 +397,25 @@ def p_statement_assign(p):
     '''statement : init_var
                  | assign_var
                  | declare_var
-                 | increment'''
+                 '''
     p[0] = p[1]
-    
-def p_expression_literal(p):
-    '''expression : literal'''
-                  
+
+def p_statement_expression(p):
+    '''statement : expression SEMI
+                 | func_call SEMI'''
     p[0] = p[1]
 
 def p_expression_group(p):
-    '''expression : LPAREN expression RPAREN'''
+    '''expression : LPAREN expression RPAREN
+                  | LPAREN name RPAREN'''
     p[0] = p[2]
 
-def p_expression_bitw_neg(p):
+def p_expression_neg(p):
     '''expression : NEGATE expression
-                  | MINUS expression'''
-    p[0] = p[2]
+                  | MINUS expression
+                  | NEGATE name
+                  | MINUS name'''
+    p[0] = 'negate ' + str(p[2])
 
 def p_binops(p):
     '''binop : PLUS
@@ -349,17 +424,24 @@ def p_binops(p):
              | DIVIDE
              | LSHIFT
              | RSHIFT
-             | PERCENT'''
+             | PERCENT
+             | BITAND
+             | BITOR
+             | conditional'''
     p[0] = p[1]
 
 def p_expression_binop(p):
-    '''expression : expression binop ID
-                  | ID binop expression'''
-    p[0] = "binop " + str(p[3])
+    '''expression : expression binop name
+                  | name binop expression
+                  | name binop name
+                  | expression binop expression'''
+    p[0] = str(p[1]) + ' binop ' + str(p[3])
+
 
 def p_expression_increment(p):
-    '''increment : ID INCREMENT SEMI'''
-    p[0] = "increment" + str(p[1])
+    '''expression : ID INCREMENT'''
+    p[0] = "increment " + str(p[1])
+
 
 #Variables
 class VarDeclNode(NamedTuple):
@@ -390,18 +472,23 @@ def p_decl_var(p):
 
 def p_init_var_ls(p):
     '''init_var_ls : modifier dtype ID assign
-                   | dtype ID assign'''
+                   | dtype ID assign
+                   | modifier dtype ID LBRACK RBRACK assign
+                   | dtype ID  LBRACK RBRACK assign'''
+                   
     if len(p) == 5:
         p[0] = [p[2], p[3]]
     elif len(p) == 4:
         p[0] = [p[1], p[2]]
+    elif len(p) == 7:
+        p[0] = [str(p[2])+"_arr", p[3]]
+    elif len(p) == 6:
+        p[0] = [str(p[1])+"_arr", p[2]]
 
 def p_init_var_rs(p):
-    '''init_var_rs : literal SEMI
-                   | ID SEMI
-                   | LPAREN dtype RPAREN literal SEMI
-                   | LPAREN dtype RPAREN ID SEMI
-                   | func_call
+    '''init_var_rs : name SEMI
+                   | type_cast name SEMI                   
+                   | func_call SEMI
                    '''
     if len(p) == 3:
         p[0] = p[1]
@@ -419,9 +506,24 @@ def p_init_var(p):
     #p[0] = VarInitNode(str(p[4]), str(p[2]), str(p[1]))      
     p[0] = VarInitNode(value, name, dtype)
 
+def p_assign_var_ls(p):
+    '''assign_var_ls : name assign'''
+    p[0] = p[1]
+
+def p_assign_var_rs(p):
+    '''assign_var_rs : expression SEMI
+                     | name SEMI
+                     | func_call SEMI
+                     | type_cast assign_var_rs SEMI'''
+    if len(p) == 3:
+        p[0] = p[1]
+    elif len(p) == 4:
+        p[0] = p[2]
+    
+
 def p_assign_var(p):
-    '''assign_var : ID assign expression SEMI'''
-    p[0] = VarAssignmentNode(str(p[3]), str(p[1]))
+    '''assign_var : assign_var_ls assign_var_rs'''
+    p[0] = VarAssignmentNode(str(p[2]), str(p[1]))
            
 
 
@@ -436,7 +538,7 @@ def p_error(p):
 
 parser = yacc.yacc()
 
-code = getFileAsString('/home/kristian/byggern-nicer_code/misc.c')[0:1500]
+code = getFileAsString('/home/kristian/byggern-nicer_code/menu.c')
 
 parser.parse(code,debug=False)
 # for node in nodes:
