@@ -108,8 +108,12 @@ def t_ID(t):
     return t
 
 def t_NONDECIMAL_L(t):
-    r'0[xb]\d+'
-    t.value = int(t.value[2:])
+    r'0[xXbB][0-9a-fA-F]+'    
+    if t.value[1] in 'xX':
+        t.value = int(t.value, 16)
+    elif t.value[1] in 'bB':
+        t.value = int(t.value, 2)
+
     return t
 
 def t_FLOAT_L(t):
@@ -138,7 +142,7 @@ def t_INCLUDE(t):
     return t
 
 def t_DEFINE(t):
-    r'\#define(\s+\w+)+'    
+    r'\#define([\t\f ]+\w+)+'
     return t
 
 def t_IFNDEF(t):
@@ -198,27 +202,12 @@ def p_assign(p):
     p[0] = p[1]
 
 def p_struct_type(p):
-    '''struct_type : STRUCT ID'''
+    '''struct_type : STRUCT name'''
     p[0] = p[2]
 
 def p_type_cast(p):
     '''type_cast : LPAREN dtype RPAREN'''
-
-
-#TODO: Replace ID with a more robust solution for typedef'd structs! Look at name lookup in calc.py
-def p_dtype(p):
-    '''dtype : CHAR             
-             | DOUBLE
-             | FLOAT
-             | INT
-             | STRUCT
-             | VOID
-             | UINT8_T
-             | UINT16_T
-             | struct_type
-             | ID
-             | dtype ASTERISK'''
-    p[0] = p[1]
+    p[0] = p[2]
 
 def p_modifier(p):
     '''modifier : CONST
@@ -231,6 +220,36 @@ def p_modifier(p):
                 | VOLATILE
                 '''
     p[0] = p[1]
+
+def p_modifier_list(p):
+    '''modifier_list :
+                     | modifier_list modifier
+                     '''
+    if len(p) == 1:
+        p[0] = []
+    else:
+        p[0] = str(p[1]) + ' ' + str(p[2])
+
+def p_modified_type(p):
+    '''modified : modifier_list dtype
+                | modifier'''
+    p[0] = p[2]
+
+#TODO: Replace ID with a more robust solution for typedef'd structs! Look at name lookup in calc.py
+def p_dtype(p):
+    '''dtype : CHAR             
+             | DOUBLE
+             | FLOAT
+             | INT             
+             | VOID
+             | UINT8_T
+             | UINT16_T
+             | struct_type
+             | ID
+             | dtype ASTERISK             
+             '''
+    p[0] = p[1]
+
 
 def p_names(p):
     '''name : ID
@@ -286,12 +305,14 @@ def p_conditionals(p):
                    | OR'''
     p[0] = p[1]
 
+#TODO: Remove or simplify. No reason to treat condexpr as separate from binop
 def p_conditional_expr(p):
     '''conditional_expr : name conditional expression
                         | expression conditional name
                         | expression conditional expression
                         | name conditional name
-                        | name'''
+                        | name
+                        | expression'''
     p[0] = 'condexpr'
 
 def p_for_loop(p):
@@ -310,6 +331,8 @@ class ArgumentNode(NamedTuple):
     value : str
     dtype : str
 
+
+#NOTE: Argument syntax is probably one thing that should have a lot of detail
 def p_func_arg(p):
     '''func_arg : name                
                 | dtype name
@@ -344,9 +367,14 @@ class FunctionDefNode(NamedTuple):
 
 
 def p_func_def(p):
-    '''func_def : dtype ID LPAREN func_arglist RPAREN LBRACE node_list RBRACE'''    
-    fdef = FunctionDefNode(str(p[2]),p[4], str(p[1]))
-    p[0] = fdef
+    '''func_def : dtype ID LPAREN func_arglist RPAREN LBRACE node_list RBRACE
+                | ID LPAREN func_arglist RPAREN LBRACE node_list RBRACE'''    
+    if len(p) == 9:
+        fdef = FunctionDefNode(str(p[2]),p[4], str(p[1]))
+        p[0] = fdef
+    if len(p) == 8:
+        fdef = FunctionDefNode(str(p[1]),p[3], str(p[1]))
+        p[0] = fdef
 
 class FunctionCallNode(NamedTuple):
     type = 'FunctionCall'
@@ -355,6 +383,7 @@ class FunctionCallNode(NamedTuple):
 
 def p_func_call(p):
     '''func_call : ID LPAREN func_arglist RPAREN
+                 | SIZEOF LPAREN func_arglist RPAREN
                  '''    
     p[0] = FunctionCallNode(str(p[1]), p[3])
 
@@ -377,8 +406,12 @@ class AccessNode(NamedTuple):
 def p_access(p):
     '''access : name LBRACK name RBRACK
               | name LBRACK expression RBRACK
-              | name MEMBER name'''
-    p[0] = AccessNode(str(p[1]), str(p[3]))
+              | name MEMBER name
+              | BITAND name'''
+    if len(p) == 3:
+        p[0] = AccessNode(p[1], p[2])
+    else:
+        p[0] = AccessNode(str(p[1]), str(p[3]))
 
 class StructNode(NamedTuple):
     type = 'StructDef'
@@ -389,6 +422,9 @@ def p_struct_def(p):
     '''struct_def : STRUCT ID LBRACE node_list RBRACE SEMI'''
     p[0] = StructNode(str(p[2]), p[4])
 
+def p_struct_typedef(p):
+    '''struct_typedef : TYPEDEF STRUCT LBRACE node_list RBRACE ID SEMI'''
+    p[0] = StructNode(str(p[6]), p[4])
 
 #Classes
 
@@ -402,7 +438,8 @@ def p_statement_assign(p):
 
 def p_statement_expression(p):
     '''statement : expression SEMI
-                 | func_call SEMI'''
+                 | func_call SEMI
+                 | return SEMI'''
     p[0] = p[1]
 
 def p_expression_group(p):
@@ -417,6 +454,8 @@ def p_expression_neg(p):
                   | MINUS name'''
     p[0] = 'negate ' + str(p[2])
 
+
+
 def p_binops(p):
     '''binop : PLUS
              | MINUS
@@ -430,17 +469,27 @@ def p_binops(p):
              | conditional'''
     p[0] = p[1]
 
+def p_operands(p):
+    '''operand : name
+               | expression
+               | type_cast name
+               | func_call'''
+    p[0] = p[1]
+
+
 def p_expression_binop(p):
-    '''expression : expression binop name
-                  | name binop expression
-                  | name binop name
-                  | expression binop expression'''
+    '''expression : operand binop operand'''
     p[0] = str(p[1]) + ' binop ' + str(p[3])
 
 
 def p_expression_increment(p):
-    '''expression : ID INCREMENT'''
+    '''expression : name INCREMENT'''
     p[0] = "increment " + str(p[1])
+
+def p_expression_return(p):
+    '''return : RETURN name
+              | RETURN expression'''
+    p[0] = p[2]
 
 
 #Variables
@@ -461,43 +510,72 @@ class VarAssignmentNode(NamedTuple):
     value: str
     name: str
 
-def p_decl_var(p):
-    '''declare_var : dtype ID SEMI
-                   | modifier dtype ID SEMI'''
-    
+def p_complex_dtype(p):
+    '''complex_dtype : dtype
+                     | modifier dtype'''
+    if len(p) == 2:
+        p[0] = p[1]
+    elif len(p):
+        p[0] = p[2]
+
+def p_decl_var_ls(p):
+    '''declare_var_ls : dtype ID
+                      | modifier dtype ID'''
+    if len(p) == 3:
+        p[0] = [p[1],p[2]]
     if len(p) == 4:
-        p[0] = VarDeclNode(str(p[2]), str(p[1]))
-    elif len(p) == 5:
-        p[0] = VarDeclNode(str(p[3]), str(p[1])+' '+str(p[2]))
+        p[0] = [p[2],p[3]]
+    
+
+def p_declare_var(p):
+    '''declare_var : declare_var_ls SEMI'''
+
+    p[0] = p[1]
+
+
+def p_vector_init(p):
+    '''vector_init : LBRACK RBRACK
+                   | LBRACK name RBRACK
+                   '''    
+
+def p_vector_init_list(p):
+    '''vector_init_list : 
+                        | vector_init_list vector_init'''
+    if len(p) == 1:
+        p[0] = []
+    else:
+        p[0] = str(p[1]) + ' ' + str(p[2])
+
 
 def p_init_var_ls(p):
-    '''init_var_ls : modifier dtype ID assign
-                   | dtype ID assign
-                   | modifier dtype ID LBRACK RBRACK assign
-                   | dtype ID  LBRACK RBRACK assign'''
-                   
-    if len(p) == 5:
-        p[0] = [p[2], p[3]]
-    elif len(p) == 4:
-        p[0] = [p[1], p[2]]
-    elif len(p) == 7:
-        p[0] = [str(p[2])+"_arr", p[3]]
-    elif len(p) == 6:
-        p[0] = [str(p[1])+"_arr", p[2]]
+    '''init_var_ls : declare_var_ls assign
+                   | declare_var_ls vector_init assign
+                   '''
+                       
+    p[0] = [str(p[1]), p[2]]
+    
+
+def p_typecast_init_rs(p):
+    '''typecast_init : type_cast init_var_rs'''
+    p[0] = p[2]
 
 def p_init_var_rs(p):
     '''init_var_rs : name SEMI
-                   | type_cast name SEMI                   
                    | func_call SEMI
+                   | expression SEMI 
+                   | typecast_init
+                   | LPAREN name RPAREN
                    '''
     if len(p) == 3:
         p[0] = p[1]
-    elif len(p) == 6:
-        p[0] = p[4]
-    elif len(p) == 2:
-        p[0]  = p[1].name
+    elif len(p) == 4:
+        p[0] = p[2]
 
-#'''init_var : dtype ID assign expression SEMI'''
+def p_init_var_rs_error(p):
+    '''init_var_rs : error SEMI'''
+    print("Couldn't parse right side at %s" %p)
+    p[0] = "parser_error" #NOTE: Doesn't seem to work
+
 def p_init_var(p):
     '''init_var : init_var_ls init_var_rs'''
     value = p[2]
@@ -510,15 +588,10 @@ def p_assign_var_ls(p):
     '''assign_var_ls : name assign'''
     p[0] = p[1]
 
-def p_assign_var_rs(p):
-    '''assign_var_rs : expression SEMI
-                     | name SEMI
-                     | func_call SEMI
-                     | type_cast assign_var_rs SEMI'''
-    if len(p) == 3:
-        p[0] = p[1]
-    elif len(p) == 4:
-        p[0] = p[2]
+
+def p_assign_var_rs(p): #NOTE: Or should initialization be considered a special case of assigment instead?
+    '''assign_var_rs : init_var_rs'''
+    p[0] = p[1]
     
 
 def p_assign_var(p):
@@ -538,7 +611,7 @@ def p_error(p):
 
 parser = yacc.yacc()
 
-code = getFileAsString('/home/kristian/byggern-nicer_code/menu.c')
+code = getFileAsString('/home/kristian/byggern-nicer_code/fonts.h')
 
 parser.parse(code,debug=False)
 # for node in nodes:
