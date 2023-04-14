@@ -96,7 +96,7 @@ def dataNode_from_callNode(callNode):
                 calleeID += str(callee.scope[2])
                 inputs.append(calleeID)                            
             except:
-                print("Could not generate calleeID for %s at %s, %s" %(name, callNode.scope.filepath, callNode.scope.lineno))
+                print("Warning: Could not generate calleeID for %s at %s, %s" %(name, callNode.scope.filepath, callNode.scope.lineno))
                 pass
     
     for arg in callNode.arguments:
@@ -110,7 +110,7 @@ def dataNode_from_callNode(callNode):
                 inputs.append(argID)
 
         except:
-            print("Could not generate argID for %s at %s, %s" %(name, callNode.scope.filepath, callNode.scope.lineno))
+            print("Warning: Could not generate argID for %s at %s, %s" %(name, callNode.scope.filepath, callNode.scope.lineno))
             pass            
 
     scope = callNode.scope

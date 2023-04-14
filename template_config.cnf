@@ -1,1 +1,15 @@
+#language
+includepattern:#include ([\'\"<](\w|[\.\/])*[\'\">])
+sourcepattern:^.*\.(c|h|hpp)$
 
+#project
+topDirectory:/home/user/projectfolder/
+excludedDirectories:['build', 'logfiles', 'someotherdir']
+
+#logfiles
+tokenDirectory:logfiles/tokenizer_output/
+includelog:logfiles/log_find_includes.txt
+functiondeflog:logfiles/log_find_function_defs.txt
+functioncallog:logfiles/log_find_function_calls.txt
+constantLog:logfiles/log_find_const_ass.txt
+dataNodeLog:logfiles/log_datanodes.txt

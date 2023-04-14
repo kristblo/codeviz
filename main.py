@@ -14,6 +14,7 @@ excludedDirectories = getExludedDirs(configFileName)
 
 #Reset logfiles directory
 delete_files_recv('./logfiles')
+#delete_files_recv('./output') #uncomment to delete all outputs in between runs
 
 #Get inclusion data
 inclusiondata = getProjectInclusionData(topDirectory, excludedDirectories, configFileName)
@@ -60,36 +61,6 @@ constLog = str(getKeywordFromConfigFile(configFileName, 'constantLog'))
 for item in projectConstants:    
     appendStringToFile(constLog, str(item)+'\n')
 
-    
-#GPT code test
-# from ply_tokenizer import ply_tokenize
-# from ply_tokenizer import get_variablesv2
-# from ply_tokenizer import get_function_declarations
-# from ply_tokenizer import get_function_calls
-# from ply_tokenizer import get_variables
-# from ply_tokenizer import parse_file
-# ply_tokens = ply_tokenize('/home/kristian/byggern-nicer_code/misc.h')
-# vars=get_variablesflowGraph = Graph(directed=True)
-# for node in globalNodes:
-#     flowGraph.add_vertex()
-
-# vtext = flowGraph.new_vertex_property("string")
-# for index, node in enumerate(globalNodes):
-#     vtext[index] = node.name
-
-# for i in range(0, len(flowMatrix)):
-#     for j in range(0, len(flowMatrix[i])):
-#         if flowMatrix[i][j] == 1:
-#             flowGraph.add_edge(j, i)
-
-# vpos = arf_layout(flowGraph, max_iter=1000)
-# graph_draw(flowGraph,
-#            pos=vpos,
-#            vertex_size=10,
-#            output_size=(2400, 2400),
-#            vertex_text=vtext,
-#            vertex_text_position=5,
-#            output="arf/dataflow.pdf")
 
 
 
@@ -163,110 +134,115 @@ for item in uniqueParentDirs:
     colors.append([random.uniform(0.05,0.9), random.uniform(0.05,0.9), random.uniform(0.05,0.9), 1])
     
 
+##################################################
+################BUILD INCLUDE GRAPH###############
+##################################################
+print("Building include graph...")
 
-# #Build include graph
-# maingraph = Graph(directed=True)
-# for file in (allFiles):
-#     maingraph.add_vertex()
+maingraph = Graph(directed=True)
+for file in (allFiles):
+    maingraph.add_vertex()
 
-# #Link node text with vertices
-# vtext = maingraph.new_vertex_property("string")
-# for i in range(0, len(allFiles)):
-#     vtext[i] = shortenedFileNames[i]
+#Link node text with vertices
+vtext = maingraph.new_vertex_property("string")
+for i in range(0, len(allFiles)):
+    vtext[i] = shortenedFileNames[i]
 
-# #Associate vertices with a parent directory
-# vdir = maingraph.new_vertex_property("string")
-# for i in range(0, len(allFiles)):
-#     vdir[i] = parentDirPerFile[i]
+#Associate vertices with a parent directory
+vdir = maingraph.new_vertex_property("string")
+for i in range(0, len(allFiles)):
+    vdir[i] = parentDirPerFile[i]
 
-# vcolor = maingraph.new_vertex_property("vector<float>")
-# for i in range(0, len(allFiles)):
-#     for j in range(0, len(colors)):
-#         if(vdir[i] == uniqueParentDirs[j]):
-#             vcolor[i]=colors[j]
+vcolor = maingraph.new_vertex_property("vector<float>")
+for i in range(0, len(allFiles)):
+    for j in range(0, len(colors)):
+        if(vdir[i] == uniqueParentDirs[j]):
+            vcolor[i]=colors[j]
 
 
 #Generate edges between includes
-# for i in range(0, len(inclusionMatrix)):    
-#     for j in range(0, len(allFiles)):
-#         if(inclusionMatrix[i][j] == 1):
-#             maingraph.add_edge(j, i)
+for i in range(0, len(inclusionMatrix)):    
+    for j in range(0, len(allFiles)):
+        if(inclusionMatrix[i][j] == 1):
+            maingraph.add_edge(j, i)
 
+
+print("Built include graph, visualising...")
 
 #ARF layout
-# vpos = arf_layout(maingraph, max_iter=0)
-# graph_draw(maingraph,
-#             pos=vpos,
-#             vertex_text=vtext,
-#             vertex_text_position=5,
-#             vertex_size=6,
-#             vertex_fill_color=vcolor,
-#             #ink_scale=0.2,
-#             output="arf/includes.pdf")
+vpos = arf_layout(maingraph, max_iter=0)
+graph_draw(maingraph,
+            pos=vpos,
+            vertex_text=vtext,
+            vertex_text_position=5,
+            vertex_size=6,
+            vertex_fill_color=vcolor,
+            #ink_scale=0.2,
+            output="output/arf/includes.pdf")
 
 #Outdegree weighted force-directed layout
-# indegmap = maingraph.degree_property_map("out")
-# indegmap.a = 2*((indegmap.a**0.5)*0.5+0.4)+2
-# ebet = betweenness(maingraph)[1]
-# graph_draw(maingraph,
-#             #pos=vpos,
-#             vertex_text=vtext,
-#             vertex_text_position="centered",
-#             vertex_size=indegmap,            
-#             ink_scale=3,
-#             output="weighted-includes.pdf")
+indegmap = maingraph.degree_property_map("out")
+indegmap.a = 2*((indegmap.a**0.5)*0.5+0.4)+2
+ebet = betweenness(maingraph)[1]
+graph_draw(maingraph,
+            #pos=vpos,
+            vertex_text=vtext,
+            vertex_text_position="centered",
+            vertex_size=indegmap,            
+            ink_scale=3,
+            output="output/hierarchicals/weighted-includes.pdf")
 
-# #Hierarchical block something layout
-# htest = minimize_nested_blockmodel_dl(maingraph)
-# draw_hierarchy(htest, 
-#                 vertex_text=vtext,
-#                 vertex_text_position="centered",
-#                 vertex_color=vcolor,
-#                 output="hierarchicals/hierarchical_test.pdf")
+#Hierarchical block something layout
+htest = minimize_nested_blockmodel_dl(maingraph)
+draw_hierarchy(htest, 
+                vertex_text=vtext,
+                vertex_text_position="centered",
+                vertex_color=vcolor,
+                output="output/hierarchicals/hierarchical_test.pdf")
 
 
 #Filter out libfiles from the graph drawing
-# libvcs = maingraph.new_vertex_property("bool")
-# for i in range(0, maingraph.num_vertices()):
-#     if(vdir[i] == "libfiles"):
-#         libvcs[i] = False
-#     else:
-#         libvcs[i] = True
-# libsfiltered = GraphView(maingraph)
-# libsfiltered.set_vertex_filter(libvcs)
-# vpos = arf_layout(libsfiltered, max_iter=0)
-# graph_draw(libsfiltered,
-#             pos=vpos,
-#             vertex_text=vtext,
-#             vertex_text_position=5,
-#             vertex_color=vcolor,
-#             output="arf/libfiles_filtered.pdf")
+libvcs = maingraph.new_vertex_property("bool")
+for i in range(0, maingraph.num_vertices()):
+    if(vdir[i] == "libfiles"):
+        libvcs[i] = False
+    else:
+        libvcs[i] = True
+libsfiltered = GraphView(maingraph)
+libsfiltered.set_vertex_filter(libvcs)
+vpos = arf_layout(libsfiltered, max_iter=0)
+graph_draw(libsfiltered,
+            pos=vpos,
+            vertex_text=vtext,
+            vertex_text_position=5,
+            vertex_color=vcolor,
+            output="output/arf/libfiles_filtered.pdf")
 
 # #Hierarchical filtered
-# hfiltered = minimize_nested_blockmodel_dl(libsfiltered)
-# draw_hierarchy(hfiltered,
-#                 vertex_text=vtext,
-#                 vertex_text_position="centered",
-#                 vertex_color=vcolor,
-#                 output="hierarchicals/hierarchical_filtered.pdf")
+hfiltered = minimize_nested_blockmodel_dl(libsfiltered)
+draw_hierarchy(hfiltered,
+                vertex_text=vtext,
+                vertex_text_position="centered",
+                vertex_color=vcolor,
+                output="output/hierarchicals/hierarchical_filtered.pdf")
 
-# #Minimized blockmodel finds clusters without the nesting
-# blocktest = minimize_blockmodel_dl(maingraph)
-# blocktest.draw(ink_scale=0.5,
-#                 vertex_text=vtext,
-#                 vertex_text_position=5,
-#                 vertex_size=6,
-#                 output="blockmodels/blockmodel_test.pdf")
+#Minimized blockmodel finds clusters without the nesting
+blocktest = minimize_blockmodel_dl(maingraph)
+blocktest.draw(ink_scale=0.5,
+                vertex_text=vtext,
+                vertex_text_position=5,
+                vertex_size=6,
+                output="output/blockmodels/blockmodel_test.pdf")
 
-# #Minimized and filtered
-# blockfiltered = minimize_blockmodel_dl(libsfiltered)
-# blockfiltered.draw(ink_scale=0.5,
-#                 vertex_text=vtext,
-#                 vertex_text_position=5,
-#                 vertex_size=6,
-#                 output="blockmodels/blockmodel_filtered_test.pdf")
+#Minimized and filtered
+blockfiltered = minimize_blockmodel_dl(libsfiltered)
+blockfiltered.draw(ink_scale=0.5,
+                vertex_text=vtext,
+                vertex_text_position=5,
+                vertex_size=6,
+                output="output/blockmodels/blockmodel_filtered_test.pdf")
 
-
+print("Simple include graphs complete")
 
 #########################################
 #Idea for clustering by folder:
@@ -275,7 +251,8 @@ for item in uniqueParentDirs:
 #for files that are close to one another in the directories.
 #Draw the graph with the include path edges visible
 #########################################
-#ARF layout
+# print("Trying to cluster by folder. Very expensive, expect crash unless run separately")
+# #ARF layout
 # dirDistanceG = Graph(directed=False)
 # dirDistanceG.add_vertex(len(allFiles))
 # distanceMatrix = inclusiondata[4]
@@ -310,6 +287,8 @@ for item in uniqueParentDirs:
 #                     a=10,
 #                     max_iter=500)
 
+# print("Built clustered include graphs, visualising...")
+
 # #Filter out all 144² edges in order to not fuck with the drawer
 # efilt = dirDistanceG.new_edge_property("bool")
 # for item in efilt.a:
@@ -326,7 +305,7 @@ for item in uniqueParentDirs:
 #             ink_scale=1,
 #             #fit_view=False,
 #             #fit_view_ink=False,
-#             output="arf/dirDists.pdf")
+#             output="output/arf/dirDists.pdf")
 
 # #Adding include edges
 # incDistanceG = GraphView(dirDistanceG,directed=True)
@@ -345,8 +324,9 @@ for item in uniqueParentDirs:
 #             ink_scale=1,
 #             #fit_view=False,
 #             #fit_view_ink=False,
-#             output="arf/dircluster_incedges.pdf")
+#             output="output/arf/dircluster_incedges.pdf")
 
+#print("Finished arf clustered include layout, moving on to sfdp")
 
 ##################################################
 #Grouped sfdp: Make parentdir a vertex prop map,
@@ -398,7 +378,7 @@ for item in uniqueParentDirs:
 #             ink_scale=1,
 #             #fit_view=False,
 #             #fit_view_ink=False,
-#             output="sfdp/grouped_simple.pdf")
+#             output="output/sfdp/grouped_simple.pdf")
 
 # #Test the effect of gamma and r
 # gammas = [0.3, 1, 3, 10, 30]
@@ -410,7 +390,7 @@ for item in uniqueParentDirs:
 #                             r=r,
 #                             groups=vparents)
 
-#         op_string = "sfdp/grouped_g" + str(gamma) + "_r" + str(r) + ".pdf"
+#         op_string = "output/sfdp/grouped_g" + str(gamma) + "_r" + str(r) + ".pdf"
 #         graph_draw(groupedsfdp,
 #                     pos=vpos,
 #                     vertex_size=6,
@@ -418,41 +398,47 @@ for item in uniqueParentDirs:
 #                     ink_scale=1,
 #                     output=op_string)
 
+# print("Finished sfdp clustered include graphs, all include graphs complete")
 
 #############################################################################
 #################################FUNCTIONS###################################
 #############################################################################
-# functionGraph = Graph(directed=True)
-# for function in functionGlobalDefs:
-#     functionGraph.add_vertex()
-# for callee in undefinedCallees:
-#     functionGraph.add_vertex()
+print("Generating function call hierarchy graph and visualising...")
 
-# vtext = functionGraph.new_vertex_property("string")
-# for i in range(0, len(functionGlobalDefs)):    
-#     vtext[i] = functionGlobalDefs[i].name
-# for i in range(0, len(undefinedCallees)):
-#     vtext[len(functionGlobalDefs)+i] = undefinedCallees[i]
+functionGraph = Graph(directed=True)
+for function in functionGlobalDefs:
+    functionGraph.add_vertex()
+for callee in undefinedCallees:
+    functionGraph.add_vertex()
 
-# for i in range(0, len(functionMatrix)):
-#     for j in range(0, len(functionMatrix[i])):
-#         if functionMatrix[i][j] == 1:
-#             functionGraph.add_edge(j, i)
+vtext = functionGraph.new_vertex_property("string")
+for i in range(0, len(functionGlobalDefs)):    
+    vtext[i] = functionGlobalDefs[i].name
+for i in range(0, len(undefinedCallees)):
+    vtext[len(functionGlobalDefs)+i] = undefinedCallees[i]
+
+for i in range(0, len(functionMatrix)):
+    for j in range(0, len(functionMatrix[i])):
+        if functionMatrix[i][j] == 1:
+            functionGraph.add_edge(j, i)
 
 
-# vpos = arf_layout(functionGraph, max_iter=0)
-# graph_draw(functionGraph,
-#             pos=vpos,
-#             vertex_text=vtext,
-#             vertex_text_position=5,
-#             vertex_size=6,
-#             #vertex_fill_color=vcolor,
-#             #ink_scale=0.2,
-#             output="arf/functions.pdf")
+vpos = arf_layout(functionGraph, max_iter=0)
+graph_draw(functionGraph,
+            pos=vpos,
+            vertex_text=vtext,
+            vertex_text_position=5,
+            vertex_size=6,
+            #vertex_fill_color=vcolor,
+            #ink_scale=0.2,
+            output="output/arf/functions.pdf")
+
+print("Function call hierarchy graph complete")
 
 #############################################################################
 ##################################DATAFLOW###################################
 #############################################################################
+#print("Generating full data flow graph using dataflow v1")
 # flowGraph = Graph(directed=True)
 # for node in globalNodes:
 #     flowGraph.add_vertex()
@@ -473,11 +459,15 @@ for item in uniqueParentDirs:
 #            output_size=(2400, 2400),
 #            vertex_text=vtext,
 #            vertex_text_position=5,
-#            output="arf/dataflow.pdf")
+#            output="output/arf/dataflow.pdf")
+
+#print("Data flow v1 complete")
 
 #############################################################################
 ##################################DATAFLOW_V2################################
 #############################################################################
+print("Generating full data flow graph using dataflow v2...")
+
 flowGraph = Graph(directed=True)
 for node in dataNodes:
     flowGraph.add_vertex()
@@ -500,6 +490,8 @@ for i in range(0, len(dataNodeMatrix)):
         if dataNodeMatrix[i][j] == 1:
             flowGraph.add_edge(j, i)
 
+print("Data flow v2 graph generation complete, visualising...")
+
 vpos = arf_layout(flowGraph, max_iter=1000)
 graph_draw(flowGraph,
            pos=vpos,
@@ -508,7 +500,7 @@ graph_draw(flowGraph,
            output_size=(2400, 2400),
            vertex_text=vtext,
            vertex_text_position=5,
-           output="arf/dataflowv2.pdf")
+           output="output/arf/dataflowv2.pdf")
 
 ####Grouped sfdp dflowv2
 dataflowSFDP = Graph(directed=True)
@@ -556,7 +548,7 @@ graph_draw(dataflowSFDP,
            vertex_size=10,
            vertex_fill_color=vcolor,
            output_size=(2400,2400),
-           output="sfdp/dataflowSFDP.pdf"
+           output="output/sfdp/dataflowSFDP.pdf"
            )
 
 #Test multiple gammas and rs
@@ -568,7 +560,7 @@ for gamma in gammas:
                            gamma=gamma,
                            r=r,
                            groups=vparents)
-        op_string = "sfdp/dataflowv2/dfv2_g" \
+        op_string = "output/sfdp/dfv2_g" \
                     + str(gamma) + "_r" + str(r) \
                     + ".pdf"
         graph_draw(dataflowSFDP,
@@ -579,3 +571,7 @@ for gamma in gammas:
                    vertex_fill_color=vcolor,
                    output_size=(2400,2400),
                    output=op_string)
+        
+print("Data flow v2 visualisation complete")
+
+print("All visualisations complete")
