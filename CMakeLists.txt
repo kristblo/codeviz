@@ -20,7 +20,9 @@ endif()
 
 
 ###BUILD###
-set(CMAKE_CXX_FLAGS "-std=c++14 ${CMAKE_CXX_FLAGS}")
+#set(CMAKE_CXX_FLAGS "-std=c++17 ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_BUILD_TYPE Debug)
 #add_compile_options(-fdump-rtl-all-graph)
@@ -29,11 +31,15 @@ set(CMAKE_BUILD_TYPE Debug)
 include_directories(
     include
 	include/parsernodes
-)
+	include/file_mgmt
+)	
 
 #Create a C++ library from the available .cpp files except main
 add_library(codeviz_main_lib
 	src/parsernodes/parsernodetypes.cpp
+	src/file_mgmt/fileopener.cpp
+	src/file_mgmt/filefinder.cpp
+	src/file_mgmt/filewriter.cpp
 )
 
 

@@ -1,5 +1,8 @@
 #include <iostream>
 #include "parsernodetypes.h"
+#include "fileopener.h"
+#include "filefinder.h"
+#include "filewriter.h"
 
 int main(int argc, char** argv){
     std::cout << "Hello, world!" << std::endl;
@@ -21,6 +24,22 @@ int main(int argc, char** argv){
     std::cout << "incnode value: " << incNodeTest.getValue() << std::endl;
     std::cout << "incnode user: " << incNodeTest.getUser() << std::endl;
     std::cout << "incnode type: " << incNodeTest.getParserNodeType() << std::endl;
+
+    std::string filename = "/home/kristian/byggern-nicer_code/misc.c";
+    std::string file_contents = readFileIntoString(filename);
+
+    //std::cout << file_contents << endl;
+
+    fs::path top_dir = "/home/kristian/byggern-nicer_code";
+    std::unordered_set<std::string> excl_dirs = {".vs", "sam", "build", "logfiles"};
+    std::vector<std::string> found_files;
+
+    find_files("/home/kristian/byggern-nicer_code", excl_dirs, found_files);
+    for(std::string s : found_files)
+    {
+        std::cout << s << std::endl;
+        write_line_to_file("filesfound.txt", s);
+    }
 
     return 0;
 }
