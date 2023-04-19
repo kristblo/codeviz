@@ -20,5 +20,5 @@ My "compiler" will look for the following keywords in the file, and insert whate
 includepattern: regex pattern to find include statements, for adjustment per language.
 sourcepattern: regex pattern to find source files by looking for file endings.
 topDirectory: absolute path to the project
-excludedDirectories: subdirectories to be ignored by the compiler, mostly relevant for the include paths. Some of my algorithms are at least O2, so not having to scan through large libraries, for instance, is relevant.
+excludedDirectories: subdirectories to be ignored by the compiler, mostly relevant for the include paths. Some of my algorithms are at least N2, so not having to scan through large libraries, for instance, is relevant.
 includelog: where to put include paths diagnostics.
