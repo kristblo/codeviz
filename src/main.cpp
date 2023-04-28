@@ -3,6 +3,7 @@
 #include "fileopener.h"
 #include "filefinder.h"
 #include "filewriter.h"
+#include "tokenizer.h"              
 
 int main(int argc, char** argv){
     std::cout << "Hello, world!" << std::endl;
@@ -39,6 +40,14 @@ int main(int argc, char** argv){
     {
         std::cout << s << std::endl;
         write_line_to_file("filesfound.txt", s);
+    }
+
+    Tokenizer tokenizer;
+    std::vector<std::string> tokentest = tokenizer.tokenize(file_contents);
+    std::cout << tokenizer.tokens_pattern << std::endl;
+    for(std::string tok: tokentest)
+    {
+        write_line_to_file("tokenizertest.txt", tok);
     }
 
     return 0;
