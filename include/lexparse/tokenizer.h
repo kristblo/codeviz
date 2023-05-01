@@ -4,32 +4,45 @@
 #include <iostream>
 #include <string>
 #include <regex>
-#include <utility>
+#include "filewriter.h"
+
 
 class Token{
 public:
     std::string type;
     std::string value;
-    int line;
-    int column;
+    int line;    
+
+    Token(std::string aType, std::string aValue, int aLine);
 };
 
 class Tokenizer{
 public:
-    std::string tokens_pattern;
 
-    std::vector<std::pair<std::string, std::string>> tokens = 
+    std::vector<Token> tokens;
+    
+    //State variables for use during tokenization
+    std::string tokens_pattern;
+    int lineno = 1;
+    std::pair<std::string, std::string> currentHit;
+    std::string currentRaw;
+
+    std::vector<std::pair<std::string, std::string>> token_definitions = 
     {
+        {"DEFINE", "\\#define([\\t\\f ]+\\w+)+"},
+        {"INCLUDE", "\\#include\\s*(\"|<).*?(>|\")"},
+        {"STRING_L",  "\"[^\"]*\""},
         {"LCOMMENT","\\/\\*(.|\\n)*?\\*\\/"},
-        {"COMMENT", "\\/\\/[^\\n]*"},
+        {"COMMENT", "\\/\\/[^\\n]*"},        
+        {"NEWLINE", "\\n"}, 
         {"COMPLEX_ASSIGN", "(&=)|(\\|=)|(\\^=)|(%=)|(\\*=)|(\\/=)|(\\+=)|(-=)"},
+        {"INCREMENT", "\\+\\+"},
         {"ID","[a-zA-Z_][a-zA-Z0-9_]*"},
         {"AND","&&"},
         {"OR", "\\|\\|"},
         {"MEMBER","(->)|(\\.)"},
         {"FLOAT_L","\\d+\\.\\d+"},
         {"INT_L","\\d+"}, //Int literal; literally an int
-        {"STRING_L",  "\"[^\"]*\""},
         {"CHAR_L","\'[^\']*\'"},
         {"PLUS","\\+"},
         {"MINUS","-"},
@@ -41,7 +54,8 @@ public:
         {"RBRACE","\\}"},
         {"LBRACK","\\["},
         {"RBRACK","\\]"},
-        {"SEMI",";"},
+        {"LSHIFT","<<"},
+        {"RSHIFT",">>"},
         {"EQ","=="},
         {"NEQ","!="},
         {"LT","<"},
@@ -54,15 +68,10 @@ public:
         {"BITAND","&"},
         {"BITOR","\\|"},
         {"COMMA",","},
+        {"SEMI",";"},
         {"IFNDEF","\\#ifndef\\s+\\w+"},
-        {"ENDIF","\\#endif"},        
-        {"LSHIFT","<<"},
-        {"RSHIFT",">>"},
-        {"INCREMENT","\\+\\+"},
+        {"ENDIF","\\#endif"},                
         {"NONDECIMAL_L","0[xXbB][0-9a-fA-F]+"},
-        {"DEFINE", "\\#define([\\t\\f ]+\\w+)+"},
-        {"INCLUDE", "\\#include\\s*(\"|<).*?(>|\")"},
-        //{"newline", "\\n"},
     };
 
     std::map<std::string, std::string> reserved_words =
@@ -104,8 +113,23 @@ public:
         {"WHILE","while"},
 
     };
+
+    std::map<std::string, void(Tokenizer::*)()> token_actions =    
+    {
+        {"LCOMMENT", &Tokenizer::action_LCOMMENT},
+        {"COMMENT", &Tokenizer::action_COMMENT},
+        {"NEWLINE", &Tokenizer::action_NEWLINE},
+        {"ID", &Tokenizer::action_ID},
+    };
+
+    void action_LCOMMENT();
+    void action_COMMENT();
+    void action_NEWLINE();
+    void action_ID();
+
+
     std::string compile_pattern();
-    std::vector<std::string> tokenize(std::string input);
+    void tokenize(std::string input);
 
     Tokenizer();
 

@@ -32,12 +32,13 @@ include_directories(
     include
 	include/parsernodes
 	include/file_mgmt
-	include/lexparse
+	include/lexparse	
 )	
 
 #Create a C++ library from the available .cpp files except main
 add_library(codeviz_main_lib
 	src/parsernodes/parsernodetypes.cpp
+	src/file_mgmt/filedeleter.cpp
 	src/file_mgmt/fileopener.cpp
 	src/file_mgmt/filefinder.cpp
 	src/file_mgmt/filewriter.cpp
@@ -48,5 +49,5 @@ add_library(codeviz_main_lib
 add_executable(codeviz_main src/main.cpp)
 
 target_link_libraries(codeviz_main
-    codeviz_main_lib
+    codeviz_main_lib	
 )

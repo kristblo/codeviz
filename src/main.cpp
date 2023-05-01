@@ -3,6 +3,7 @@
 #include "fileopener.h"
 #include "filefinder.h"
 #include "filewriter.h"
+#include "filedeleter.h"
 #include "tokenizer.h"              
 
 int main(int argc, char** argv){
@@ -32,22 +33,44 @@ int main(int argc, char** argv){
     //std::cout << file_contents << endl;
 
     fs::path top_dir = "/home/kristian/byggern-nicer_code";
-    std::unordered_set<std::string> excl_dirs = {".vs", "sam", "build", "logfiles"};
+    std::unordered_set<std::string> excl_dirs = {".vs", "sam", "build", "logfiles", ".vscode"};
     std::vector<std::string> found_files;
 
     find_files("/home/kristian/byggern-nicer_code", excl_dirs, found_files);
     for(std::string s : found_files)
     {
-        std::cout << s << std::endl;
+        //std::cout << s << std::endl;
         write_line_to_file("filesfound.txt", s);
+
     }
 
-    Tokenizer tokenizer;
-    std::vector<std::string> tokentest = tokenizer.tokenize(file_contents);
-    std::cout << tokenizer.tokens_pattern << std::endl;
-    for(std::string tok: tokentest)
+    // Tokenizer tokenizer;
+    // tokenizer.tokenize(file_contents);
+    // //std::cout << tokenizer.tokens_pattern << std::endl;    
+
+    // for(auto& token: tokenizer.tokens)
+    // {
+    //     std::string s = token.type + ", " + token.value + ", " + std::to_string(token.line);
+    //     write_line_to_file("tokenizertest.txt", s);
+    // }
+
+    //Test tokenizer for the full project
+    delete_files_in_tree("../logfiles");
+    for(std::string file: found_files)
     {
-        write_line_to_file("tokenizertest.txt", tok);
+        std::cout << "Currently tokenizing: " << file << std::endl;
+        std::string alteredName = file;
+        std::replace(alteredName.begin(), alteredName.end(), '/', '_');
+        std::string outputfolder = "../logfiles/tokenizer_output/";
+        std::string outputfile = outputfolder + "tokenized_" + alteredName + ".txt";
+        std::string contents = readFileIntoString(file);
+        Tokenizer tokenizer;        
+        tokenizer.tokenize(contents);
+        for(auto& token: tokenizer.tokens)   
+        {
+            std::string s = token.type + ", " + token.value + ", " + std::to_string(token.line);
+            write_line_to_file(outputfile, s);
+        }
     }
 
     return 0;
