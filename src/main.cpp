@@ -1,4 +1,5 @@
 #include <iostream>
+#include <thread>
 #include "parsernodetypes.h"
 #include "fileopener.h"
 #include "filefinder.h"
@@ -36,7 +37,7 @@ int main(int argc, char** argv){
     std::unordered_set<std::string> excl_dirs = {".vs", "sam", "build", "logfiles", ".vscode"};
     std::vector<std::string> found_files;
 
-    find_files("/home/kristian/byggern-nicer_code", excl_dirs, found_files);
+    find_files_recursively("/home/kristian/byggern-nicer_code", excl_dirs, found_files);
     for(std::string s : found_files)
     {
         //std::cout << s << std::endl;
@@ -44,18 +45,10 @@ int main(int argc, char** argv){
 
     }
 
-    // Tokenizer tokenizer;
-    // tokenizer.tokenize(file_contents);
-    // //std::cout << tokenizer.tokens_pattern << std::endl;    
-
-    // for(auto& token: tokenizer.tokens)
-    // {
-    //     std::string s = token.type + ", " + token.value + ", " + std::to_string(token.line);
-    //     write_line_to_file("tokenizertest.txt", s);
-    // }
-
-    //Test tokenizer for the full project
+    //Pre-tokenization cleanup
     delete_files_in_tree("../logfiles");
+    //Test tokenizer for the full project
+    #if(0)
     for(std::string file: found_files)
     {
         std::cout << "Currently tokenizing: " << file << std::endl;
@@ -72,6 +65,39 @@ int main(int argc, char** argv){
             write_line_to_file(outputfile, s);
         }
     }
+    #endif
+
+    //Multithreaded execution
+    #if(1)
+    std::vector<std::pair<std::string, std::thread>> tok_threads;
+    for(std::string file: found_files)
+    {           
+        std::string cleanFileName = file;
+        std::replace(cleanFileName.begin(), cleanFileName.end(), '/', '_');
+        
+        std::string outputDir = "../logfiles/tokenizer_output/";
+        std::string outputFile = outputDir + "tokenized_" + cleanFileName + ".txt";
+        std::string contents = readFileIntoString(file);
+
+        tok_threads.push_back(
+            {file,
+            std::thread(
+            [](std::string contentsToTokenize){                
+                Tokenizer tokenizer;
+                tokenizer.tokenize(contentsToTokenize);
+            }, contents)
+            }
+        );
+        //std::cout << "Tokenization of " << tok_threads.back().first << " started" << std::endl;
+
+
+    }
+    for(auto& tok_thread: tok_threads)
+    {        
+        tok_thread.second.join();
+        std::cout << "Tokenization of " << tok_thread.first << " complete" << std::endl;
+    }
+    #endif
 
     return 0;
 }

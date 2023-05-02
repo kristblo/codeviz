@@ -1,12 +1,24 @@
 #include "filedeleter.h"
 
-void delete_files_in_tree(std::string topDir)
+void delete_file(std::string filename)
+{
+    if(!std::filesystem::is_directory(filename))
+    {
+        std::cout << "Deleting: " << filename << std::endl;
+        if(remove(filename.c_str()) != 0)
+        {
+            std::cerr << "Failed to delete file: " << filename << std::endl;
+        }
+    }
+    else{
+        std::cerr << "File was not file, but directory: " << filename << std::endl;
+    }
+}
+
+void delete_files_in_dir(const char* dir)
 {
 
-    char directory_path[2048];
-    strncpy(directory_path, topDir.c_str(), sizeof(directory_path));
-    directory_path[sizeof(directory_path) -1] = 0;
-    DIR* directory = opendir(directory_path);
+    DIR* directory = opendir(dir);
 
     if(directory != nullptr)
     {
@@ -18,13 +30,20 @@ void delete_files_in_tree(std::string topDir)
             {
                 continue;
             }
-            std::string file_path = std::string(directory_path) + "/" + entry->d_name; //TODO: OS check
+            std::string file_path = std::string(dir) + "/" + entry->d_name; //TODO: OS check
 
-            if(remove(file_path.c_str()) != 0)
-            {
-                std::cerr << "Failed to delete file: " << file_path << std::endl;
-            }
+            delete_file(file_path);
         }
         closedir(directory);
+    }
+}
+
+void delete_files_in_tree(std::string topDir)
+{
+    std::vector<std::string> files;
+    find_files_recursively(topDir, files);
+    for(auto file: files)
+    {
+        delete_file(file);
     }
 }
