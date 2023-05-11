@@ -31,8 +31,7 @@ set(CMAKE_BUILD_TYPE Debug)
 include_directories(
     include
 	include/parsernodes
-	include/file_mgmt
-	include/lexparse	
+	include/file_mgmt	
 )	
 
 #Create a C++ library from the available .cpp files except main
@@ -42,7 +41,8 @@ add_library(codeviz_main_lib
 	src/file_mgmt/fileopener.cpp
 	src/file_mgmt/filefinder.cpp
 	src/file_mgmt/filewriter.cpp
-	src/lexparse/tokenizer.cpp
+	src/tokenizer.cpp
+	src/includepathfinder.cpp
 )
 
 

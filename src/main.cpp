@@ -6,6 +6,7 @@
 #include "filewriter.h"
 #include "filedeleter.h"
 #include "tokenizer.h"              
+#include "includepathfinder.h"
 
 int main(int argc, char** argv){
     std::cout << "Hello, world!" << std::endl;
@@ -68,7 +69,7 @@ int main(int argc, char** argv){
     #endif
 
     //Multithreaded execution
-    #if(1)
+    #if(0)
     std::vector<std::pair<std::string, std::thread>> tok_threads;
     for(std::string file: found_files)
     {           
@@ -97,6 +98,52 @@ int main(int argc, char** argv){
         tok_thread.second.join();
         std::cout << "Tokenization of " << tok_thread.first << " complete" << std::endl;
     }
+    #endif
+
+    //Incpathfinder test
+    #if(0)
+    IncludePathFinder includePathFinder;
+    for(std::string file: found_files)
+    {
+        std::string contents = readFileIntoString(file);
+        includePathFinder.findIncludeStatements(contents);
+        includePathFinder.findFullIncludePaths(file, found_files);
+
+    }
+
+    #endif
+    
+    //Full project inclusion test
+    #if(1)
+    std::string topDir = "/home/kristian/byggern-nicer_code";
+    std::vector<std::string> exclDirs = {".vs", "sam", "build", "logfiles", ".vscode", ".git"};
+    IncludePathFinder includePathFinder;
+    includePathFinder.calculateProjectInclusionData(topDir, exclDirs);
+    std::map<str, vec<str>> incs = includePathFinder.getIncludesPerFile();
+    std::map<str, vec<str>> danglers = includePathFinder.getDanglersPerFile();
+    for(auto parent: incs)
+    {
+        std::cout << parent.first << " includes:\n";
+        for(str child: incs[parent.first])
+        {
+            std::cout << child << std::endl;
+        }
+        for(str child: danglers[parent.first])
+        {
+            std::cout << child << std::endl;
+        }
+        std::cout << std::endl;
+    }
+    vec<vec<bool>> incMat = includePathFinder.getInclusionMatrix();
+    for(auto row: incMat)
+    {
+        for(bool el: row)
+        {
+            std::cout << el;
+        }
+        std::cout << std::endl;
+    }
+
     #endif
 
     return 0;

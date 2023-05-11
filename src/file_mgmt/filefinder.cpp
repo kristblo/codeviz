@@ -35,3 +35,16 @@ void find_files_recursively(const fs::path &top_dir, std::vector<std::string> &o
         }        
     }
 }
+
+int calculate_distance_between_files(std::string filepath1, std::string filepath2)
+{
+    std::filesystem::path p1 = filepath1;
+    std::filesystem::path p2 = filepath2;
+    std::filesystem::path parent1 = p1.parent_path();
+    std::filesystem::path parent2 = p2.parent_path();
+
+    int distance = abs(parent1.compare(parent2));
+
+    return distance;
+
+}
