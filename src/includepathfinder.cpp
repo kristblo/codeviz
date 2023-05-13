@@ -145,7 +145,6 @@ void IncludePathFinder::calculateProjectInclusionData(str topDir, vec<str> exclD
     }    
 
     //Catalogue of dangling includes across project
-    std::set<str> danglingIncludesInProject;
     for(auto file: danglingIncludesPerFile)
     {
         for(str dangler: file.second)
@@ -155,7 +154,7 @@ void IncludePathFinder::calculateProjectInclusionData(str topDir, vec<str> exclD
     }    
 
     //Generate inclusion matrix
-    int numKnownFiles = allKnownFiles.size();
+    int numKnownFiles = fullIncludePathsPerFile.size();
     int numDanglers = danglingIncludesInProject.size();
     for(auto file: fullIncludePathsPerFile)
     {
@@ -163,24 +162,26 @@ void IncludePathFinder::calculateProjectInclusionData(str topDir, vec<str> exclD
         vec<str> danglersInThis = danglingIncludesPerFile[file.first];
         vec<bool> matrixRow(numKnownFiles+numDanglers, 0);
         
+        auto f_iterator = fullIncludePathsPerFile.begin();
         for(int i = 0; i < numKnownFiles; i++)
         {
             if(std::find(includesInThis.begin(), includesInThis.end(), 
-               allKnownFiles[i]) != includesInThis.end())
+               (*f_iterator).first) != includesInThis.end())
             {
                 matrixRow[i] = 1;
             }
+            f_iterator++;
         }
 
-        auto iterator = danglingIncludesInProject.begin();
+        auto d_iterator = danglingIncludesInProject.begin();
         for(int i = 0; i < numDanglers; i++)
         {
             if(std::find(danglersInThis.begin(), danglersInThis.end(),
-               *iterator) != danglersInThis.end())
+               *d_iterator) != danglersInThis.end())
             {
                 matrixRow[numKnownFiles + i] = 1;
             }
-            iterator++;
+            d_iterator++;
         }
 
         inclusionMatrix.push_back(matrixRow);
@@ -200,6 +201,11 @@ std::map<str, vec<str>> IncludePathFinder::getIncludesPerFile()
 std::map<str, vec<str>> IncludePathFinder::getDanglersPerFile()
 {
     return danglingIncludesPerFile;
+}
+
+std::set<str> IncludePathFinder::getDanglersInProject()
+{
+    return danglingIncludesInProject;
 }
 
 IncludePathFinder::IncludePathFinder()

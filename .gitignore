@@ -1,4 +1,5 @@
 build/*
 logfiles/*
 .vscode/*
+python/*
 *.code-workspace

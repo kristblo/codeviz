@@ -7,8 +7,6 @@
 #include <vector>
 #include <set>
 #include <algorithm>
-//#include <filesystem>
-//#include <experimental/filesystem>
 #include "filewriter.h"
 #include "fileopener.h"
 #include "filefinder.h"
@@ -24,6 +22,7 @@ private:
 
     std::map<str, vec<str>> fullIncludePathsPerFile;
     std::map<str, vec<str>> danglingIncludesPerFile;
+    std::set<str> danglingIncludesInProject;
 
     str incLog = "../logfiles/inclog.txt";
     str includePattern = "#include ([\'\"<](\\w|[\\.\\/])*[\'\">])";//TODO: make config file
@@ -59,6 +58,7 @@ public:
 
     std::map<str, vec<str>> getIncludesPerFile();
     std::map<str, vec<str>> getDanglersPerFile();
+    std::set<str> getDanglersInProject();
 
 
     IncludePathFinder();

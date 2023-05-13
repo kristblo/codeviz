@@ -116,7 +116,7 @@ int main(int argc, char** argv){
     //Full project inclusion test
     #if(1)
     std::string topDir = "/home/kristian/byggern-nicer_code";
-    std::vector<std::string> exclDirs = {".vs", "sam", "build", "logfiles", ".vscode", ".git"};
+    std::vector<std::string> exclDirs = {".vs", "sam", "build", "logfiles", ".vscode", ".git", "python"};
     IncludePathFinder includePathFinder;
     includePathFinder.calculateProjectInclusionData(topDir, exclDirs);
     std::map<str, vec<str>> incs = includePathFinder.getIncludesPerFile();
@@ -126,23 +126,49 @@ int main(int argc, char** argv){
         std::cout << parent.first << " includes:\n";
         for(str child: incs[parent.first])
         {
-            std::cout << child << std::endl;
+            std::cout << '\t' << child << std::endl;
         }
         for(str child: danglers[parent.first])
         {
-            std::cout << child << std::endl;
+            std::cout << '\t' << child << std::endl;
         }
         std::cout << std::endl;
     }
     vec<vec<bool>> incMat = includePathFinder.getInclusionMatrix();
+    std::string incMatString;
     for(auto row: incMat)
     {
+        std::string rowstr;
         for(bool el: row)
         {
             std::cout << el;
+            rowstr.append(el?"1":"0");
         }
         std::cout << std::endl;
+        //write_line_to_file("../logfiles/incmat.txt", rowstr);
+        incMatString.append(rowstr+'\n');
     }
+    incMatString.pop_back();
+    write_to_file("../logfiles/incmat.txt", incMatString);
+    
+    std::string allFilesString;
+    for(auto file: incs)
+    {
+        //write_line_to_file("../logfiles/projectFiles.txt", file.first);
+        allFilesString.append(file.first+'\n');
+    }
+    allFilesString.pop_back();
+    write_to_file("../logfiles/projectFiles.txt", allFilesString);
+    
+    std::set<str> allDanglers = includePathFinder.getDanglersInProject();
+    std::string allDanglersString;
+    for(auto file: allDanglers)
+    {
+        //write_line_to_file("../logfiles/projectDanglers.txt", file);
+        allDanglersString.append(file+'\n');
+    }
+    allDanglersString.pop_back();
+    write_to_file("../logfiles/projectDanglers.txt", allDanglersString);
 
     #endif
 
