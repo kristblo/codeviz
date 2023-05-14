@@ -5,6 +5,8 @@
 #include <vector>
 #include "string.h"
 
+
+/// @brief Types of information the parser looks for
 enum ParserNodeType{SCOPE, INCLUDE, DEFINE, ARGUMENT, 
                     FUNCDEF, FUNCCALL, FUNCDECL, ACCESS, 
                     STRUCT, VARDECL, VARINIT, VARASSIGN};
@@ -26,10 +28,10 @@ public:
     ScopeNode(std::vector<int> aScopeID, int start, int end);
 };
 
+/// @brief C/C++ specific pieces of information become ParserNodes
 class ParserNode{
-private:
-    //Sets the type of node
-    ParserNodeType type;
+private:    
+    ParserNodeType type;    
     ScopeNode* scope;
 
 public:
@@ -41,10 +43,14 @@ public:
 
 };
 
+/// @brief Inclusion statements
 class IncludeNode : public ParserNode{
 private:
+    /// @brief File being included
     std::string value;
-    std::string user; //Local file, probably
+
+    /// @brief File using another file
+    std::string user;
 
 public:
     
@@ -56,6 +62,7 @@ public:
 
 };
 
+/// @brief Define statements, no current use
 class DefineNode : public ParserNode{
 private:
     std::string value;
@@ -67,24 +74,30 @@ public:
 
 };
 
+/// @brief Function argument
 class ArgumentNode : public ParserNode {
 private:
+    /// @brief The literal name of the argument
     std::string name;
+    
+    /// @brief Data type of the argument, if discernible
     std::string dtype;
-    void* actual; //Pointer to the piece of data parsed as an argument
+    
+    /// @brief Pointer to the piece of data parsed as an argument
+    ParserNode* actual;
 
 public:
     std::string getName();
     std::string getDtype();
-    void* getActual();
-    void setActual(void* aActual);    
+    ParserNode* getActual();
+    void setActual(ParserNode* aActual);    
     ArgumentNode(std::string aName,
                  std::string aDtype,
-                 void* aActual,                 
+                 ParserNode* aActual,                 
                  ScopeNode* aScope);
 };
 
-
+/// @brief Base class for all functions
 class FunctionNode : public ParserNode{
 private:
     std::string name;
@@ -104,6 +117,7 @@ public:
                  ScopeNode* aScope);
 };
 
+/// @brief Function definition
 class FunctionDefNode : public FunctionNode{
 public:    
     FunctionDefNode(std::string aName,
@@ -111,12 +125,14 @@ public:
                     ScopeNode* aScope);
 };
 
+/// @brief Function call
 class FunctionCallNode : public FunctionNode {
 public:
     FunctionCallNode(std::string aName,
                      ScopeNode* aScope);
 };
 
+/// @brief Function declaration
 class FunctionDeclNode : public FunctionNode {
 public:
     FunctionDeclNode(std::string aName,
@@ -124,9 +140,13 @@ public:
                      ScopeNode* aScope);
 };
 
+/// @brief Access generally refers to the . or -> operators
 class AccessNode : public ParserNode{
 private:
+    /// @brief Left hand side of access operator
     std::string accessor; //TODO: Consider void* to actual?
+    
+    /// @brief Right hand side of access operator
     std::string accessee;
 
 public:
@@ -137,6 +157,7 @@ public:
                 ScopeNode* aScope);
 };
 
+/// @brief Represents C struct definitions
 class StructNode : public ParserNode{
 private:
     std::string name;
@@ -152,6 +173,7 @@ public:
 
 };
 
+/// @brief Variable base class
 class VariableNode : public ParserNode{
 private:
     std::string value;
@@ -169,6 +191,7 @@ public:
                     ScopeNode* aScope);
 };
 
+/// @brief Variable declaration
 class VarDeclNode : public VariableNode{
 public:
     VarDeclNode(std::string aName,
@@ -176,6 +199,7 @@ public:
                 ScopeNode* aScope);
 };
 
+/// @brief Variable initialization
 class VarInitNode : public VariableNode{
 public:
     VarInitNode(std::string aName,
@@ -184,6 +208,7 @@ public:
                 ScopeNode* aScope);
 };
 
+/// @brief Variable (re)assignment, core concept in data flow
 class VarAssignmentNode : public VariableNode{
 public:
     VarAssignmentNode(std::string aName,

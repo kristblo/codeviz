@@ -83,10 +83,24 @@ int main(int argc, char** argv){
         tok_threads.push_back(
             {file,
             std::thread(
-            [](std::string contentsToTokenize){                
+            [](std::string contentsToTokenize, std::string outputFileName){                
                 Tokenizer tokenizer;
                 tokenizer.tokenize(contentsToTokenize);
-            }, contents)
+
+                for(auto& token: tokenizer.tokens)
+                {
+                    std::string scopestr;
+                    for(int el: token.scope)
+                    {
+                        scopestr.append(std::to_string(el));
+                        scopestr.append(".");
+                    }
+                    scopestr.pop_back();
+                    std::string s = token.type + ", " + token.value + ", " + std::to_string(token.line) + ", " + scopestr;
+                    write_line_to_file(outputFileName, s);
+                }
+                
+            }, contents, outputFile)
             }
         );
         //std::cout << "Tokenization of " << tok_threads.back().first << " started" << std::endl;
@@ -115,7 +129,8 @@ int main(int argc, char** argv){
     
     //Full project inclusion test
     #if(1)
-    std::string topDir = "/home/kristian/byggern-nicer_code";
+    //std::string topDir = "/home/kristian/Project_codeviz_cpp";
+    std::string topDir = argv[1];
     std::vector<std::string> exclDirs = {".vs", "sam", "build", "logfiles", ".vscode", ".git", "python"};
     IncludePathFinder includePathFinder;
     includePathFinder.calculateProjectInclusionData(topDir, exclDirs);

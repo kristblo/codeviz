@@ -30,13 +30,15 @@ set(CMAKE_BUILD_TYPE Debug)
 #Include directories; header files
 include_directories(
     include
-	include/parsernodes
+	include/parser
 	include/file_mgmt	
 )	
 
 #Create a C++ library from the available .cpp files except main
 add_library(codeviz_main_lib
-	src/parsernodes/parsernodetypes.cpp
+	src/parser/parsernodetypes.cpp
+	src/parser/fileparser.cpp
+	src/parser/projectparser.cpp
 	src/file_mgmt/filedeleter.cpp
 	src/file_mgmt/fileopener.cpp
 	src/file_mgmt/filefinder.cpp

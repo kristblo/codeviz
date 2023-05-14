@@ -1,11 +1,12 @@
 #include "tokenizer.h"
 
 
-Token::Token(std::string aType, std::string aValue, int aLine)
+Token::Token(std::string aType, std::string aValue, int aLine, std::vector<int> aScope)
 {
     type = aType;
     value = aValue;
     line = aLine;
+    scope = aScope;
 }
 
 std::string Tokenizer::compile_pattern()
@@ -66,7 +67,10 @@ void Tokenizer::tokenize(std::string input)
         }
         else{
             //No particular action is taken for most tokens
-            Token currentToken = Token(currentHit.first, currentRaw, lineno);
+            Token currentToken = Token(currentHit.first, 
+                                       currentRaw, 
+                                       lineno,
+                                       currentScope);
             tokens.push_back(currentToken);
         }
         
@@ -103,16 +107,49 @@ void Tokenizer::action_NEWLINE()
 
 void Tokenizer::action_ID()
 {
-    std::string name = currentHit.first;
-    std::string upper = str_toupper(name);
+    std::string name = currentRaw;
+    std::string upper = str_toupper(name);        
     if(reserved_words.find(upper) != reserved_words.end())
-    {
-        tokens.push_back(Token(upper, upper, lineno));
+    {                
+        tokens.push_back(Token(upper, 
+                               currentRaw, 
+                               lineno,
+                               currentScope));
     }
     else{
-        tokens.push_back(Token(currentHit.first, currentRaw, lineno));
+        tokens.push_back(Token(currentHit.first, 
+                               currentRaw, 
+                               lineno,
+                               currentScope));
     }
 }
+
+void Tokenizer::action_LBRACE()
+{
+    tokens.push_back(Token(currentHit.first,
+                           currentRaw,
+                           lineno,
+                           currentScope));
+    currentScope.push_back(lineno);
+}
+
+void Tokenizer::action_RBRACE()
+{
+    currentScope.pop_back();
+    tokens.push_back(Token(currentHit.first,
+                           currentRaw,
+                           lineno,
+                           currentScope));
+}
+
+// void Tokenizer::action_DEFDTYPE()
+// {
+//     std::string name = str_toupper(currentRaw);
+//     tokens.push_back(Token(name,
+//                            currentRaw,
+//                            lineno,
+//                            currentScope));
+// }
 
 Tokenizer::Tokenizer()
 {

@@ -7,26 +7,44 @@
 #include "filewriter.h"
 
 
+/// @brief Represents a symbol in a C/C++ file
 class Token{
 public:
     std::string type;
     std::string value;
-    int line;    
+    int line;
+    
+    /// @brief Scope identificator for the token. Indeces represent depth, value is lineno
+    std::vector<int> scope;
 
-    Token(std::string aType, std::string aValue, int aLine);
+    Token(std::string aType, std::string aValue, int aLine, std::vector<int> aScope);
 };
 
+
+/// @brief Finds and stores tokens from an input string
 class Tokenizer{
 public:
 
+    /// @brief Tokens found while tokenizing
     std::vector<Token> tokens;
     
     //State variables for use during tokenization
+    
+    /// @brief String containing composite regexpr of all tokens
     std::string tokens_pattern;
+    
+    /// @brief Linecount in input strin
     int lineno = 1;
-    std::pair<std::string, std::string> currentHit;
-    std::string currentRaw;
 
+    /// @brief Latest regex hit and match group
+    std::pair<std::string, std::string> currentHit;
+
+    /// @brief Latest regex hit
+    std::string currentRaw;
+    
+    std::vector<int> currentScope = {0};
+
+    /// @brief All tokens: type and corresponding regexpr. Ordered by priority
     std::vector<std::pair<std::string, std::string>> token_definitions = 
     {
         {"DEFINE", "\\#define([\\t\\f ]+\\w+)+"},
@@ -37,6 +55,7 @@ public:
         {"NEWLINE", "\\n"}, 
         {"COMPLEX_ASSIGN", "(&=)|(\\|=)|(\\^=)|(%=)|(\\*=)|(\\/=)|(\\+=)|(-=)"},
         {"INCREMENT", "\\+\\+"},
+        {"DEFDTYPE", "[a-zA-Z_][a-zA-Z0-9_]*_t"},
         {"ID","[a-zA-Z_][a-zA-Z0-9_]*"},
         {"AND","&&"},
         {"OR", "\\|\\|"},
@@ -74,6 +93,7 @@ public:
         {"NONDECIMAL_L","0[xXbB][0-9a-fA-F]+"},
     };
 
+    /// @brief Reserved words in C/C++
     std::map<std::string, std::string> reserved_words =
     {
         {"AUTO","auto"}, //Reserved starts here
@@ -114,21 +134,33 @@ public:
 
     };
 
+    /// @brief Register of actions to take when encountering specific tokens, inspired by PLY
     std::map<std::string, void(Tokenizer::*)()> token_actions =    
     {
         {"LCOMMENT", &Tokenizer::action_LCOMMENT},
         {"COMMENT", &Tokenizer::action_COMMENT},
         {"NEWLINE", &Tokenizer::action_NEWLINE},
         {"ID", &Tokenizer::action_ID},
+        {"LBRACE", &Tokenizer::action_LBRACE},
+        {"RBRACE", &Tokenizer::action_RBRACE},
+        //{"DEFDTYPE", &Tokenizer::action_DEFDTYPE},
     };
+
 
     void action_LCOMMENT();
     void action_COMMENT();
     void action_NEWLINE();
     void action_ID();
+    void action_LBRACE();
+    void action_RBRACE();
+    //void action_DEFDTYPE();
 
-
+    /// @brief Compiles the complete regexpr for finding tokens
+    /// @return String of composite regexpr
     std::string compile_pattern();
+
+    /// @brief Do the thing
+    /// @param input Any string, nominally a .c/.cpp/.h file
     void tokenize(std::string input);
 
     Tokenizer();

@@ -108,19 +108,19 @@ std::string ArgumentNode::getDtype()
     return dtype;
 }
 
-void* ArgumentNode::getActual()
+ParserNode* ArgumentNode::getActual()
 {
     return actual;
 }
 
-void ArgumentNode::setActual(void* aActual)
+void ArgumentNode::setActual(ParserNode* aActual)
 {
     actual = aActual;
 }
 
 ArgumentNode::ArgumentNode(std::string aName,
                            std::string aDtype,
-                           void* aActual,                           
+                           ParserNode* aActual,                           
                            ScopeNode* aScope) :
                            name{aName},
                            dtype{aDtype},
