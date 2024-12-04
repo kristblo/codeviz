@@ -8,8 +8,14 @@
 #include "tokenizer.h"              
 #include "includepathfinder.h"
 
+#include "tagobject.h"
+#include "stringtotags.h"
+
 int main(int argc, char** argv){
     std::cout << "Hello, world!" << std::endl;
+
+#if(0)
+
     ScopeNode testNode0 = ScopeNode({3,4,5}, 1, 2);
     std::cout << "ID: " << testNode0.getScopeID()[2] << std::endl;
     testNode0.setScopeEnd(6);
@@ -49,7 +55,9 @@ int main(int argc, char** argv){
     //Pre-tokenization cleanup
     delete_files_in_tree("../logfiles");
     //Test tokenizer for the full project
-    #if(0)
+#endif
+
+#if(0)
     for(std::string file: found_files)
     {
         std::cout << "Currently tokenizing: " << file << std::endl;
@@ -66,10 +74,10 @@ int main(int argc, char** argv){
             write_line_to_file(outputfile, s);
         }
     }
-    #endif
+#endif
 
     //Multithreaded execution
-    #if(0)
+#if(0)
     std::vector<std::pair<std::string, std::thread>> tok_threads;
     for(std::string file: found_files)
     {           
@@ -112,10 +120,10 @@ int main(int argc, char** argv){
         tok_thread.second.join();
         std::cout << "Tokenization of " << tok_thread.first << " complete" << std::endl;
     }
-    #endif
+#endif
 
     //Incpathfinder test
-    #if(0)
+#if(0)
     IncludePathFinder includePathFinder;
     for(std::string file: found_files)
     {
@@ -125,10 +133,10 @@ int main(int argc, char** argv){
 
     }
 
-    #endif
+#endif
     
     //Full project inclusion test
-    #if(1)
+#if(0)
     //std::string topDir = "/home/kristian/Project_codeviz_cpp";
     std::string topDir = argv[1];
     std::vector<std::string> exclDirs = {".vs", "sam", "build", "logfiles", ".vscode", ".git", "python"};
@@ -185,7 +193,22 @@ int main(int argc, char** argv){
     allDanglersString.pop_back();
     write_to_file("../logfiles/projectDanglers.txt", allDanglersString);
 
-    #endif
+#endif
+
+#if(1)
+    //CTAGS test: find inclusions from ctags tagfile
+    //string inputFileName = "../tagfiles/tags"; //debug only
+    string inputFileName = argv[1];
+    string tagFileDump = readFileIntoString(inputFileName);
+    StringToTags test = StringToTags(tagFileDump);
+    
+    for(auto field : test.getTagObjects()[50].getTagFields())
+    {
+        std::cout << field << std::endl;
+    }
+    
+    
+#endif
 
     return 0;
 }
