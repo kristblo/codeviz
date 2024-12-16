@@ -48,6 +48,7 @@ add_library(codeviz_main_lib
 	src/includepathfinder.cpp
 	src/ctagsparser/tagobject.cpp
 	src/ctagsparser/stringtotags.cpp
+	src/ctagsparser/tagfileparser.cpp
 )
 
 

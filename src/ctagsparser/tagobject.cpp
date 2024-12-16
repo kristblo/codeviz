@@ -1,13 +1,24 @@
 #include "tagobject.h"
 
-std::string TagObject::getTagString()
+std::string TagObject::getTagName()
 {
-    return this->mTagString;
+  return this->mTagName;
 }
+
+std::string TagObject::getTagFile()
+{
+  return this->mTagFile;
+}
+
+std::string TagObject::getTagAddress()
+{
+  return this->mTagAddress;
+}
+
 
 std::vector<std::string> TagObject::getTagFields()
 {
-    return this->mTagFields;
+  return this->mTagFields;
 }
 
 TagObject::TagObject(std::string aTagName,
@@ -16,18 +27,24 @@ TagObject::TagObject(std::string aTagName,
             std::vector<std::string> aTagFields)
 {
     
-    this->mTagName = aTagName;
-    this->mTagFile = aTagFile;
-    this->mTagAddress = aTagAddress;
-    this->mTagFields = aTagFields;
-    
-    // size_t fieldEndPos = 0;
-    // std::string field;
-    // while((fieldEndPos = aTagString.find('\t')) != std::string::npos)
-    // {
-    //     field = aTagString.substr(0, fieldEndPos);
-    //     mTagFields.push_back(field);
-    //     aTagString = aTagString.substr(fieldEndPos + 1);
-    // }
+  this->mTagName = aTagName;
+  this->mTagFile = aTagFile;
+  this->mTagAddress = aTagAddress;
+  this->mTagFields = aTagFields;
+  
+}
 
+std::ostream& operator<<(std::ostream& os, const TagObject& tag)
+{
+  os << "Name: " << tag.mTagName << std::endl
+      << "File: " << tag.mTagFile << std::endl
+      << "Address: " << tag.mTagAddress << std::endl
+      << "Fields: ";
+
+  for(auto field : tag.mTagFields)
+  {
+    os << field << " | ";
+  }
+
+  return os;
 }

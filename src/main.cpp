@@ -10,6 +10,7 @@
 
 #include "tagobject.h"
 #include "stringtotags.h"
+#include "tagfileparser.h"
 
 int main(int argc, char** argv){
     std::cout << "Hello, world!" << std::endl;
@@ -200,14 +201,34 @@ int main(int argc, char** argv){
     //string inputFileName = "../tagfiles/tags"; //debug only
     string inputFileName = argv[1];
     string tagFileDump = readFileIntoString(inputFileName);
-    StringToTags test = StringToTags(tagFileDump);
     
-    for(auto field : test.getTagObjects()[50].getTagFields())
+    TagFileParser parserTest = TagFileParser(tagFileDump);
+    parserTest.parseTagFile();
+    std::vector<SplitTagString> splitTagStrings = parserTest.getSplitTagStrings();
+
+    std::cout << splitTagStrings.size() << std::endl;
+    std::cout << splitTagStrings[splitTagStrings.size() - 1].getTagHeader() << std::endl;
+    
+    std::vector<TagItemsAsStrings> itemsTest = parserTest.getItemStrings();
+
+    std::vector<TagObject> tagObjects;
+    for(auto item : itemsTest)
     {
-        std::cout << field << std::endl;
+        TagObject tagObject = TagObject(item.getTagHeaderItems()[0],
+                                        item.getTagHeaderItems()[1],
+                                        item.getTagHeaderItems()[2],
+                                        item.getTagFieldItems());
+        tagObjects.push_back(tagObject);
     }
-    
-    
+
+    for(auto tag : tagObjects)
+    {
+        if(tag.getTagFields()[0] == "kind:header")
+        {
+            std::cout << tag << "\n" << std::endl;
+        }
+    }
+
 #endif
 
     return 0;
