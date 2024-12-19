@@ -1,36 +1,84 @@
 #include "tagobject.h"
 
-std::string TagObject::getTagName()
+str TagObject::getTagName()
 {
   return this->mTagName;
 }
 
-std::string TagObject::getTagFile()
+str TagObject::getTagFile()
 {
   return this->mTagFile;
 }
 
-std::string TagObject::getTagAddress()
+str TagObject::getTagAddress()
 {
   return this->mTagAddress;
 }
 
+str TagObject::getTagKind()
+{
+  return this->getTagFieldValue("kind");
+}
 
-std::vector<std::string> TagObject::getTagFields()
+int TagObject::getTagLine()
+{
+  return stoi(this->getTagFieldValue("line"));
+}
+
+str TagObject::getCleanAddress()
+{
+  return this->mTagAddress;
+}
+
+std::map<str, str> TagObject::getTagFields()
 {
   return this->mTagFields;
 }
 
-TagObject::TagObject(std::string aTagName,
-            std::string aTagFile,
-            std::string aTagAddress,
-            std::vector<std::string> aTagFields)
+str TagObject::getTagFieldValue(str aTagField)
+{
+  try
+  {
+    return this->mTagFields.at(aTagField);
+  }
+  catch(const std::exception& e)
+  {
+    std::cerr << e.what() << '\n';
+    return "FieldNotFound";
+  }
+  
+}
+
+std::vector<str> TagObject::getTagFieldsAsVec()
+{
+  std::vector<str> fields;
+  for(auto item : this->mTagFields)
+  {
+    str field = item.first + ":" + item.second;
+    fields.push_back(field);
+  }
+
+  return fields;
+}
+
+TagObject::TagObject(str aTagName,
+            str aTagFile,
+            str aTagAddress,
+            std::vector<str> aTagFields)
 {
     
   this->mTagName = aTagName;
   this->mTagFile = aTagFile;
   this->mTagAddress = aTagAddress;
-  this->mTagFields = aTagFields;
+
+  for(str tagField : aTagFields)
+  {
+    size_t splitPos = tagField.find(":");
+    str fieldName = tagField.substr(0, splitPos);
+    str fieldContent = tagField.substr(splitPos + 1, str::npos);
+    this->mTagFields.try_emplace(fieldName, fieldContent);
+
+  }
   
 }
 
@@ -43,7 +91,7 @@ std::ostream& operator<<(std::ostream& os, const TagObject& tag)
 
   for(auto field : tag.mTagFields)
   {
-    os << field << " | ";
+    os << field.second << " | ";
   }
 
   return os;

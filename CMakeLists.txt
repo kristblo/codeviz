@@ -33,6 +33,8 @@ include_directories(
 	include/parser
 	include/file_mgmt
 	include/ctagsparser
+	include/ctagsparser/tagkinds
+	include/datanodes
 )	
 
 #Create a C++ library from the available .cpp files except main
@@ -46,9 +48,11 @@ add_library(codeviz_main_lib
 	src/file_mgmt/filewriter.cpp
 	src/tokenizer.cpp
 	src/includepathfinder.cpp
-	src/ctagsparser/tagobject.cpp
 	src/ctagsparser/stringtotags.cpp
 	src/ctagsparser/tagfileparser.cpp
+	src/ctagsparser/tagobject.cpp
+	src/ctagsparser/tagkinds/headertag.cpp
+	src/datanodes/moduleobject.cpp
 )
 
 

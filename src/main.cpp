@@ -1,5 +1,7 @@
 #include <iostream>
 #include <thread>
+#include <map>
+
 #include "parsernodetypes.h"
 #include "fileopener.h"
 #include "filefinder.h"
@@ -11,6 +13,8 @@
 #include "tagobject.h"
 #include "stringtotags.h"
 #include "tagfileparser.h"
+#include "moduleobject.h"
+#include "headertag.h"
 
 int main(int argc, char** argv){
     std::cout << "Hello, world!" << std::endl;
@@ -197,37 +201,101 @@ int main(int argc, char** argv){
 #endif
 
 #if(1)
-    //CTAGS test: find inclusions from ctags tagfile
-    //string inputFileName = "../tagfiles/tags"; //debug only
-    string inputFileName = argv[1];
-    string tagFileDump = readFileIntoString(inputFileName);
-    
-    TagFileParser parserTest = TagFileParser(tagFileDump);
-    parserTest.parseTagFile();
-    std::vector<SplitTagString> splitTagStrings = parserTest.getSplitTagStrings();
+  //CTAGS test: find inclusions from ctags tagfile
+  //string inputFileName = "../tagfiles/tags_codeviz"; //debug only
+  string inputFileName = argv[1];
+  string tagFileDump = readFileIntoString(inputFileName);
+  
+  TagFileParser parserTest = TagFileParser(tagFileDump);
+  parserTest.parseTagFile();
+  std::vector<SplitTagString> splitTagStrings = parserTest.getSplitTagStrings();
 
-    std::cout << splitTagStrings.size() << std::endl;
-    std::cout << splitTagStrings[splitTagStrings.size() - 1].getTagHeader() << std::endl;
-    
-    std::vector<TagItemsAsStrings> itemsTest = parserTest.getItemStrings();
+  std::cout << splitTagStrings.size() << std::endl;
+  std::cout << splitTagStrings[splitTagStrings.size() - 1].getTagHeader() << std::endl;
+  
+  std::vector<TagItemsAsStrings> itemsTest = parserTest.getItemStrings();
 
-    std::vector<TagObject> tagObjects;
-    for(auto item : itemsTest)
+  std::vector<TagObject> tagObjects;
+  for(auto item : itemsTest)
+  {
+    TagObject tagObject = TagObject(item.getTagHeaderItems()[0],
+                                    item.getTagHeaderItems()[1],
+                                    item.getTagHeaderItems()[2],
+                                    item.getTagFieldItems());
+    tagObjects.push_back(tagObject);
+  }
+
+  int headerCount = 0;
+  for(auto tag : tagObjects)
+  {
+    if(tag.getTagFields()["kind"] == "header")
     {
-        TagObject tagObject = TagObject(item.getTagHeaderItems()[0],
-                                        item.getTagHeaderItems()[1],
-                                        item.getTagHeaderItems()[2],
-                                        item.getTagFieldItems());
-        tagObjects.push_back(tagObject);
+      std::cout << tag << "\n" << std::endl;
+      headerCount++;
     }
+  }
+  std::cout << "Number of headers: " << headerCount << std::endl;
 
-    for(auto tag : tagObjects)
+  //Find all files/modules relevant to the project based on ctags
+  std::map<std::string, ModuleObject> projectModulesStringMap;
+  for(auto tag : tagObjects)
+  {
+    std::string tagFile = tag.getTagFile();
+    std::string fileBaseName = std::filesystem::path(tagFile).stem().string();
+    projectModulesStringMap.try_emplace(fileBaseName, ModuleObject(fileBaseName));
+
+    
+    std::string fileFullname = std::filesystem::path(tagFile).string();
+
+    //Using .at() instead of [] to avoid attempting to create an object if the module is 
+    //not already listed
+    std::vector<std::string> currentSourceFiles = projectModulesStringMap.at(fileBaseName).getSourceFiles();
+    auto iterator = std::find(currentSourceFiles.begin(),
+                            currentSourceFiles.end(),
+                            fileFullname);
+    if(iterator == currentSourceFiles.end())
     {
-        if(tag.getTagFields()[0] == "kind:header")
-        {
-            std::cout << tag << "\n" << std::endl;
-        }
+      projectModulesStringMap.at(fileBaseName).addSourceFile(fileFullname);
     }
+  }
+
+  for(auto filename : projectModulesStringMap)
+  {
+    std::cout << filename.second.getFileName() << std::endl;
+    for(std::string sourcefile : filename.second.getSourceFiles())
+    {
+      std::cout << sourcefile << std::endl;
+    }
+  }
+
+  //Check all header tags and add to modules map; build includes
+  vec<HeaderTag> headerTags;
+  for(auto tag : tagObjects)
+  {
+    if(tag.getTagKind() == "header")
+    {
+      HeaderTag test = HeaderTag(tag);
+      std::cout << test.getTagKind() << test.getTagAddress() << std::endl;
+      std::cout << test.getCleanAddress() << std::endl;
+
+      std::string moduleName = std::filesystem::path(tag.getTagFile()).stem().string();
+      std::string headerName = test.getHeaderName();
+      if(headerName != moduleName)
+      {
+        projectModulesStringMap.at(moduleName).addIncludeString(headerName);
+      }
+      
+    }
+  }
+
+  for(auto module : projectModulesStringMap)
+  {
+    std::cout << module.first << ":" << std::endl;
+    for(auto inc : module.second.getIncludeStrings())
+    {
+      std::cout << inc << std::endl;
+    }
+  }
 
 #endif
 

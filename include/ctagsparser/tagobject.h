@@ -5,6 +5,9 @@
 
 #include <string>
 #include <vector>
+#include <map>
+
+#define str std::string
 
 class TagObject{
 private:
@@ -13,28 +16,51 @@ private:
 	//Chapter: Proposal
 
 	/// @brief The name of the tag
-	std::string mTagName;
+	str mTagName;
 
 	/// @brief The file in which the tag was found
-	std::string mTagFile;
+	str mTagFile;
 
 	/// @brief The tag's vim-searchable name string
-	std::string mTagAddress;
+	str mTagAddress;
 
 	/// @brief Tag fields
-	std::vector<std::string> mTagFields;
+	std::map<str, str> mTagFields;
 
 public:
-	std::string getTagName();
-	std::string getTagFile();
-	std::string getTagAddress();
+  /// @brief Returns the name of the tag, i.e. the first field of a ctag
+  /// @return TagName
+  str getTagName();
+
+	/// @brief Returns the name of the file in which the tag was found, i.e. second field of a ctag
+	/// @return TagFile
+	str getTagFile();
+
+	/// @brief Returns the address of the tag, i.e. third field of a ctag
+	/// @return TagAddress
+	str getTagAddress();
+
+  /// @brief Returns the kind of the tag
+  /// @return TagKind
+  str getTagKind();
+
+  /// @brief Returns the line on which the tag was found in the source code
+  /// @return TagLine
+  int getTagLine();
+
+  /// @brief Returns a sanitized version of the tag address depending on kind
+  /// @return See child classes
+  str getCleanAddress();
 	
-	std::vector<std::string> getTagFields();
+	std::map<str, str> getTagFields();
+	str getTagFieldValue(str aTagField);
+
+  std::vector<str> getTagFieldsAsVec();
 	
-	TagObject(std::string aTagName,
-							std::string aTagFile,
-							std::string aTagAddress,
-							std::vector<std::string> aTagFields);
+	TagObject(str aTagName,
+							str aTagFile,
+							str aTagAddress,
+							std::vector<str> aTagFields);
 
 	friend std::ostream& operator<<(std::ostream& os, const TagObject& tag);
 
