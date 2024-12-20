@@ -15,6 +15,8 @@
 #include "tagfileparser.h"
 #include "moduleobject.h"
 #include "headertag.h"
+#include "functionobject.h"
+#include "classobject.h"
 
 int main(int argc, char** argv){
     std::cout << "Hello, world!" << std::endl;
@@ -237,31 +239,36 @@ int main(int argc, char** argv){
   std::cout << "Number of headers: " << headerCount << std::endl;
 
   //Find all files/modules relevant to the project based on ctags
+  //TODO: move to tagfileparser
   std::map<std::string, ModuleObject> projectModulesStringMap;
   for(auto tag : tagObjects)
   {
-    std::string tagFile = tag.getTagFile();
-    std::string fileBaseName = std::filesystem::path(tagFile).stem().string();
-    projectModulesStringMap.try_emplace(fileBaseName, ModuleObject(fileBaseName));
+    //Shorten execution time by only using file tags?
+    if(tag.getTagFields()["kind"] == "file")
+    {
+      std::string tagFile = tag.getTagFile();
+      std::string fileBaseName = std::filesystem::path(tagFile).stem().string();
+      projectModulesStringMap.try_emplace(fileBaseName, ModuleObject(fileBaseName));
 
     
-    std::string fileFullname = std::filesystem::path(tagFile).string();
+      std::string fileFullname = std::filesystem::path(tagFile).string();
 
-    //Using .at() instead of [] to avoid attempting to create an object if the module is 
-    //not already listed
-    std::vector<std::string> currentSourceFiles = projectModulesStringMap.at(fileBaseName).getSourceFiles();
-    auto iterator = std::find(currentSourceFiles.begin(),
-                            currentSourceFiles.end(),
-                            fileFullname);
-    if(iterator == currentSourceFiles.end())
-    {
-      projectModulesStringMap.at(fileBaseName).addSourceFile(fileFullname);
+      //Using .at() instead of [] to avoid attempting to create an object if the module is 
+      //not already listed
+      std::vector<std::string> currentSourceFiles = projectModulesStringMap.at(fileBaseName).getSourceFiles();
+      auto iterator = std::find(currentSourceFiles.begin(),
+                              currentSourceFiles.end(),
+                              fileFullname);
+      if(iterator == currentSourceFiles.end())
+      {
+        projectModulesStringMap.at(fileBaseName).addSourceFile(fileFullname);
+      }
     }
   }
 
   for(auto filename : projectModulesStringMap)
   {
-    std::cout << filename.second.getFileName() << std::endl;
+    std::cout << filename.second.getModuleName() << std::endl;
     for(std::string sourcefile : filename.second.getSourceFiles())
     {
       std::cout << sourcefile << std::endl;
@@ -275,27 +282,41 @@ int main(int argc, char** argv){
     if(tag.getTagKind() == "header")
     {
       HeaderTag test = HeaderTag(tag);
-      std::cout << test.getTagKind() << test.getTagAddress() << std::endl;
-      std::cout << test.getCleanAddress() << std::endl;
 
       std::string moduleName = std::filesystem::path(tag.getTagFile()).stem().string();
       std::string headerName = test.getHeaderName();
       if(headerName != moduleName)
       {
         projectModulesStringMap.at(moduleName).addIncludeString(headerName);
+        try
+        {
+          projectModulesStringMap.at(moduleName).addIncludeModule(
+                        &(projectModulesStringMap.at(headerName)));        
+        }
+        catch(const std::exception& e)
+        {
+          std::cerr << "Error: " << e.what() << " | Module \"" << headerName << "\" is probably external. Adding empty module." << '\n';
+          projectModulesStringMap.try_emplace(headerName, ModuleObject(headerName, true));
+        }
       }
-      
     }
   }
 
   for(auto module : projectModulesStringMap)
   {
     std::cout << module.first << ":" << std::endl;
-    for(auto inc : module.second.getIncludeStrings())
+    for(auto inc : module.second.getIncludedModules())
     {
-      std::cout << inc << std::endl;
+      if(!inc->isModuleExternal())
+      {
+        std::cout << inc->getModuleName() << std::endl;
+      }
     }
   }
+
+
+
+
 
 #endif
 

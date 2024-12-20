@@ -1,6 +1,6 @@
 #include "moduleobject.h"
 
-str ModuleObject::getFileName()
+str ModuleObject::getModuleName()
 {
     return this->mModuleName;
 }
@@ -30,7 +30,18 @@ vec<str> ModuleObject::getIncludeStrings()
     return this->mIncludesAsString;
 }
 
-ModuleObject::ModuleObject(str aModuleName)
+vec<ModuleObject*> ModuleObject::getIncludedModules()
+{
+    return this->mIncludes;
+}
+
+bool ModuleObject::isModuleExternal()
+{
+    return this->isExternal;
+}
+
+ModuleObject::ModuleObject(str aModuleName, bool isExternal)
 {
     this->mModuleName = aModuleName;
+    this->isExternal = isExternal;
 }
