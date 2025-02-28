@@ -51,7 +51,10 @@ add_library(codeviz_main_lib
 	src/ctagsparser/stringtotags.cpp
 	src/ctagsparser/tagfileparser.cpp
 	src/ctagsparser/tagobject.cpp
+	src/ctagsparser/tagkinds/classtag.cpp
 	src/ctagsparser/tagkinds/headertag.cpp
+	src/datanodes/classobject.cpp
+	src/datanodes/memberobject.cpp
 	src/datanodes/moduleobject.cpp
 )
 

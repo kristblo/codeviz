@@ -10,10 +10,12 @@
 #include "tokenizer.h"              
 #include "includepathfinder.h"
 
+//CTAGS includes
 #include "tagobject.h"
 #include "stringtotags.h"
 #include "tagfileparser.h"
 #include "moduleobject.h"
+#include "classtag.h"
 #include "headertag.h"
 #include "functionobject.h"
 #include "classobject.h"
@@ -238,6 +240,10 @@ int main(int argc, char** argv){
   }
   std::cout << "Number of headers: " << headerCount << std::endl;
 
+  /////////////////
+  //FILES/MODULES//
+  /////////////////
+  
   //Find all files/modules relevant to the project based on ctags
   //TODO: move to tagfileparser
   std::map<std::string, ModuleObject> projectModulesStringMap;
@@ -275,6 +281,10 @@ int main(int argc, char** argv){
     }
   }
 
+  ////////////
+  //INCLUDES//
+  ////////////
+  
   //Check all header tags and add to modules map; build includes
   vec<HeaderTag> headerTags;
   for(auto tag : tagObjects)
@@ -309,13 +319,25 @@ int main(int argc, char** argv){
     {
       if(!inc->isModuleExternal())
       {
-        std::cout << inc->getModuleName() << std::endl;
       }
+      std::cout << inc->getModuleName() << std::endl;
     }
+    std::cout << std::endl; 
   }
 
-
-
+  ///////////
+  //CLASSES//
+  ///////////
+  for(auto tag : tagObjects)
+  {
+    if(tag.getTagKind() == "class")
+    {
+      ClassTag test = ClassTag(tag);
+      std::string cleanaddress = tag.getTagName();
+      std::cout << test << std::endl << std::endl;
+    }
+  }
+  
 
 
 #endif

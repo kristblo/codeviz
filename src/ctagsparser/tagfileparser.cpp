@@ -23,7 +23,6 @@ void TagFileParser::splitTagStrings()
 		catch(const std::exception& e)
 		{
 			std::cerr << e.what() << '\n';
-			std::cout << "SplitTagStrings length: " << this->mSplitTagStrings.size() << std::endl;
 		}
 		
 
@@ -103,17 +102,17 @@ void TagItemsAsStrings::splitTagHeaderItems()
 	str tagName;
 	str tagFile;
 	str tagAddress;
-
+	
 	//Get the 'tag name', i.e. first field of a tag
 	size_t headerPos = tagHeader.find('\t');
 	tagName = tagHeader.substr(0, headerPos);
 	tagHeader = tagHeader.substr(headerPos + 1);
-
+	
 	//Get the 'tag file', second field of a tag
 	headerPos = tagHeader.find('\t');
 	tagFile = tagHeader.substr(0, headerPos);
 	tagHeader = tagHeader.substr(headerPos + 1);
-
+	
 	//Get and strip the 'tag address', third field of a tag
 	headerPos = tagHeader.find("/^");
 	tagHeader = tagHeader.substr(headerPos + 2);
@@ -123,7 +122,11 @@ void TagItemsAsStrings::splitTagHeaderItems()
 		tagHeader = tagHeader.substr(headerPos);
 	}
 	
-	tagHeader.pop_back(); //Remove terminal /
+
+	if(tagHeader.back() == '/') //Possibly remove terminal /
+	{
+		tagHeader.pop_back();
+	}
 	if(tagHeader.back() == '$') //Possibly remove terminal $
 	{
 		tagHeader.pop_back();
@@ -132,7 +135,7 @@ void TagItemsAsStrings::splitTagHeaderItems()
 	{
 		tagHeader.pop_back();
 	}
-
+	
 	try
 	{
 		tagAddress = tagHeader;
